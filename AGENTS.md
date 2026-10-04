@@ -138,8 +138,11 @@ noted for traceability.
 | 2026-10-04 | 04-01 implementer | GSD plan 04-01: duplicate takeover, live header forgery, idea key, cron copy | done — 54 tests | `.planning/phases/04-hardening/04-01-SUMMARY.md` | Phase 4 commit |
 | 2026-10-04 | 04-02 implementer | GSD plan 04-02: CSV injection, brief injection, DNS SSRF, cert PII, OG keys, admin sim default | done — 122 worker tests | `.planning/phases/04-hardening/04-02-SUMMARY.md` | Phase 4 commit |
 | 2026-10-04 | 04-03 implementer | GSD plan 04-03: card scroll, error clearing, story share, `_headers`, preload, contrast, plan/build/cert | done — axe 0 serious, 12 e2e | `.planning/phases/04-hardening/04-03-SUMMARY.md` | Phase 4 commit |
+| 2026-10-04 | Orchestrator | Phase 5 deploy: `wrangler login` (vamsis1703@gmail.com), D1 + KV create, workers.dev subdomain + Turnstile widget via API, secrets, remote migration, deploy, remote seed, 144-combo AI warm, smoke 10/10 | done — live at https://ship60.ship60vamsi.workers.dev | `reviews/idea-bank-review.md` | Phase 5 commits |
+| 2026-10-04 | Orchestrator | Production-verification fixes: Workers AI OpenAI-style `choices`/pre-parsed `response`, quality-filter vendor patterns, localhost base-URL leak, seeded ambassador kits, exact AI card persistence on register, client `registered` event rejected by the new server-only allowlist | done — production core loop verified in a real browser (Turnstile managed auto-pass, seat + card + share links) | `DECISIONS.md` §P5 | Phase 5 commits |
 
 **Maintenance:** append a row the moment a subagent is dispatched (status `running`),
 then update outcome/evidence/commit when it reports. Never delete rows; corrections go
-in the Outcome cell.
+in the Outcome cell. Phase 5 was orchestrated inline (no subagents dispatched), so its
+rows are orchestrator rows.
 

@@ -54,12 +54,33 @@ async function runOnce(
     messages: options.messages,
     max_tokens: options.maxTokens ?? 800,
     temperature: options.temperature ?? 0.7,
-  } as never) as Promise<{ response?: string }>;
+  } as never) as Promise<{
+    response?: unknown;
+    choices?: { message?: { content?: unknown } }[];
+  }>;
 
   const timeout = new Promise<null>((resolve) => setTimeout(() => resolve(null), timeoutMs));
-  const result = await Promise.race([call.catch(() => null), timeout]);
-  if (!result || typeof result.response !== "string") return null;
-  return extractJson(result.response);
+  const result = await Promise.race([
+    call.catch((error: unknown) => {
+      console.error(
+        "[ai] call failed",
+        options.model,
+        error instanceof Error ? error.message : String(error),
+      );
+      return null;
+    }),
+    timeout,
+  ]);
+  if (!result) return null;
+
+  // Verified against the live catalog (Oct 2026): the current runtime may return
+  // an OpenAI-style `choices[0].message.content` string, and `response` can
+  // already be a parsed JSON object rather than a string.
+  if (typeof result.response === "string") return extractJson(result.response);
+  if (result.response !== null && typeof result.response === "object") return result.response;
+  const content = result.choices?.[0]?.message?.content;
+  if (typeof content === "string") return extractJson(content);
+  return null;
 }
 
 export async function runAiJson<T>(options: AiJsonOptions<T>): Promise<AiJsonResult<T>> {
@@ -79,9 +100,12 @@ export async function runAiJson<T>(options: AiJsonOptions<T>): Promise<AiJsonRes
           options.onResult?.({ source: "ai", attempts, ms });
           return { data: parsed.data, source: "ai", attempts, ms };
         }
+        console.error("[ai] schema mismatch", JSON.stringify(raw).slice(0, 300));
+      } else {
+        console.error("[ai] no JSON extracted from response");
       }
-    } catch {
-      // fall through to retry / fallback
+    } catch (error) {
+      console.error("[ai] attempt failed", error instanceof Error ? error.message : String(error));
     }
   }
 

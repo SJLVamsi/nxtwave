@@ -10,13 +10,14 @@ classmate's referral link and the student's own generated project card.
 
 ## Current Position
 
-Phase: 4 of 5 (Hardening)
-Plan: 3 of 3 in current phase
-Status: Phase complete — ready for Phase 5 (Deploy)
-Last activity: 2026-10-04 — plans 04-01..03 executed by three parallel subagents;
-`npm run verify` green (typecheck, lint 0 errors, 122 unit tests, 12 e2e).
+Phase: 5 of 5 (Deploy & handoff)
+Plan: 1 of 1 in current phase
+Status: Phase complete — live at https://ship60.ship60vamsi.workers.dev
+Last activity: 2026-10-04 — deployed (version 446eb8de), remote seed, 143/144 AI
+idea cards warmed, smoke 10/10, admin + full student loop verified in a real
+browser, test rows removed.
 
-Progress: [██████████] 100% of Phase 4
+Progress: [██████████] 100%
 
 ## Performance Metrics
 

@@ -14,7 +14,7 @@ and handoff report.
 - [x] **Phase 2: Core loop** - Registration, referrals, Launchpad, share cards, leaderboards, admin, ideas, plan/seed
 - [x] **Phase 3: Live & evaluation** - Live room, evaluator, certificates, reminders, e2e harness
 - [x] **Phase 4: Hardening** - Close security/correctness/UX findings from the four reviews
-- [ ] **Phase 5: Deploy & handoff** - Real D1/KV/Turnstile/secrets, deploy, smoke, report
+- [x] **Phase 5: Deploy & handoff** - Real D1/KV/Turnstile/secrets, deploy, smoke, report
 
 ## Phase Details
 
@@ -81,4 +81,4 @@ and handoff report.
 | 2. Core loop | complete | Complete | 2026-10-04 |
 | 3. Live & evaluation | complete | Complete | 2026-10-04 |
 | 4. Hardening | 3/3 | Complete | 2026-10-04 |
-| 5. Deploy & handoff | 0/1 | Not started | - |
+| 5. Deploy & handoff | 1/1 | Complete | 2026-10-04 |

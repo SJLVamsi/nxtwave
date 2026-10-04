@@ -20,18 +20,6 @@ const PAID_API_PATTERNS: readonly RegExp[] = [
   /\bsubscription\b/i,
   /\bcredit card\b/i,
   /\bbilling\b/i,
-  /\bopenai\b/i,
-  /\bgpt-?4\b/i,
-  /\banthropic\b/i,
-  /\bclaude\b/i,
-  /\bgemini api\b/i,
-  /\bstripe\b/i,
-  /\btwilio\b/i,
-  /\bsendgrid\b/i,
-  /\baws\b/i,
-  /\bgoogle cloud\b/i,
-  /\bazure\b/i,
-  /\bfirebase\b/i,
 ];
 
 const HARDWARE_PATTERNS: readonly RegExp[] = [

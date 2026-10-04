@@ -15,6 +15,7 @@ export function ideaSystemPrompt(): string {
     "- Free tools only. No paid APIs, no subscriptions, no credit card, no cloud account with billing.",
     "- No hardware: no Arduino, Raspberry Pi, ESP32, sensors, cameras, microphones, drones or robots.",
     "- tools must list 2 to 5 free beginner tools, for example plain HTML/CSS/JS, a free LLM API, GitHub Pages or Cloudflare Pages.",
+    "- tools must not name a vendor or brand (no OpenAI, ChatGPT, Claude, Gemini, Stripe, Twilio); write 'a free LLM API' instead.",
     "- The AI part must be one prompt to an LLM API, not model training.",
     "- title: catchy, at most 8 words. pitch: one sentence, at most 25 words.",
     "- steps: exactly 3 short build steps, at most 20 words each.",

@@ -264,17 +264,8 @@ export function RegistrationForm({ idea, refCode, shareVariant, utm }: Registrat
     try {
       const result = await register(payload);
       setSuccess({ seatNo: result.seatNo, token: result.token, isReturning: result.isReturning });
-      trackEvent(
-        "registered",
-        {
-          seatNo: result.seatNo,
-          refCode: result.refCode,
-          ideaKey: idea?.key,
-          isReturning: result.isReturning,
-          ...(refCode ? { referredBy: refCode } : {}),
-        },
-        utm,
-      );
+      // The `registered` event is recorded server-side by POST /api/register;
+      // the public events endpoint rejects server-derived types by design.
     } catch (error) {
       if (error instanceof ApiError && error.code === "DUPLICATE") {
         setDuplicateUrl(findLaunchpadUrl(error));

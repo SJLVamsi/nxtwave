@@ -274,6 +274,22 @@ app.post("/register", async (c) => {
   const userId = newId("u");
   const userAgent = (c.req.header("user-agent") ?? "").slice(0, 300) || null;
 
+  // Persist the exact card the student saw. The client sends the cache key;
+  // resolve it to the cached AI card (JSON) so /me, shares and OG show the same
+  // project instead of the static-bank twin.
+  let storedIdeaKey = body.ideaKey ?? null;
+  if (storedIdeaKey && storedIdeaKey.startsWith("idea:")) {
+    try {
+      const cached = await c.env.CACHE.get(storedIdeaKey, "json");
+      if (cached && typeof cached === "object") {
+        const asJson = JSON.stringify(cached);
+        if (asJson.length <= 4000) storedIdeaKey = asJson;
+      }
+    } catch {
+      // Keep the plain key; resolveIdeaCard falls back to the bank.
+    }
+  }
+
   let inserted: { seatNo: number; refCode: string; token: string };
   try {
     inserted = await withSeatRetry(db, 5, async (seatNo) => {
@@ -297,7 +313,7 @@ app.post("/register", async (c) => {
             referrer?.id ?? null,
             tokenHash,
             seatNo,
-            body.ideaKey ?? null,
+            storedIdeaKey,
             body.utmSource ?? null,
             body.utmMedium ?? null,
             body.utmCampaign ?? null,
