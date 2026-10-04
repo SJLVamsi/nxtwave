@@ -684,13 +684,28 @@ app.get("/ambassador/:code", async (c) => {
   const db = c.env.DB;
   const user = await first<UserRow>(
     db,
-    "SELECT * FROM users WHERE UPPER(ref_code) = ? AND is_simulated = 0 LIMIT 1",
+    "SELECT * FROM users WHERE UPPER(ref_code) = ? LIMIT 1",
     code,
   );
   if (!user) return apiError(ERROR_CODES.NOT_FOUND, "No kit found for this code.");
 
+  // Simulated ambassadors are demo data: their kit shows the seeded campaign
+  // numbers (with a visible "Simulated data" label), while real ambassadors
+  // keep the real-only filters so fake rows never inflate a real person.
+  const sim = toBool(user.is_simulated);
+  const refSim = sim ? "" : " AND r.is_simulated = 0";
+  const userSim = sim ? "" : " AND u.is_simulated = 0";
+  const ruSim = sim ? "" : " AND ru.is_simulated = 0";
+
   const [{ total, qualified }, college, ambassadorsRank, collegeRank] = await Promise.all([
-    referralCounts(db, user.id),
+    first<{ total: number; qualified: number }>(
+      db,
+      `SELECT
+         (SELECT COUNT(*) FROM referrals r WHERE r.referrer_id = ?${refSim}) AS total,
+         (SELECT COUNT(*) FROM referrals r WHERE r.referrer_id = ? AND r.status = 'qualified'${refSim}) AS qualified`,
+      user.id,
+      user.id,
+    ).then((row) => row ?? { total: 0, qualified: 0 }),
     user.college_id
       ? first<CollegeRow>(db, "SELECT * FROM colleges WHERE id = ?", user.college_id)
       : Promise.resolve(null),
@@ -699,9 +714,9 @@ app.get("/ambassador/:code", async (c) => {
           db,
           `WITH stats AS (
              SELECT u.id AS id,
-               (SELECT COUNT(*) FROM referrals r WHERE r.referrer_id = u.id AND r.status = 'qualified' AND r.is_simulated = 0) AS qualified,
-               (SELECT COUNT(*) FROM referrals r WHERE r.referrer_id = u.id AND r.is_simulated = 0) AS total
-             FROM users u WHERE u.is_simulated = 0 AND u.role = 'ambassador'
+               (SELECT COUNT(*) FROM referrals r WHERE r.referrer_id = u.id AND r.status = 'qualified'${refSim}) AS qualified,
+               (SELECT COUNT(*) FROM referrals r WHERE r.referrer_id = u.id${refSim}) AS total
+             FROM users u WHERE u.role = 'ambassador'${userSim}
            ), ranked AS (
              SELECT id, ROW_NUMBER() OVER (ORDER BY qualified DESC, total DESC, id ASC) AS rank FROM stats
            )
@@ -714,11 +729,11 @@ app.get("/ambassador/:code", async (c) => {
           db,
           `WITH stats AS (
              SELECT c.id AS id,
-               (SELECT COUNT(*) FROM users u WHERE u.college_id = c.id AND u.is_simulated = 0) AS regs,
+               (SELECT COUNT(*) FROM users u WHERE u.college_id = c.id${userSim}) AS regs,
                (SELECT COUNT(*) FROM referrals r JOIN users ru ON ru.id = r.referrer_id
-                WHERE ru.college_id = c.id AND r.status = 'qualified' AND r.is_simulated = 0 AND ru.is_simulated = 0) AS qualified
+                WHERE ru.college_id = c.id AND r.status = 'qualified'${refSim}${ruSim}) AS qualified
              FROM colleges c
-             WHERE EXISTS (SELECT 1 FROM users u WHERE u.college_id = c.id AND u.is_simulated = 0)
+             WHERE EXISTS (SELECT 1 FROM users u WHERE u.college_id = c.id${userSim})
            ), ranked AS (
              SELECT id, ROW_NUMBER() OVER (ORDER BY regs DESC, qualified DESC, id ASC) AS rank FROM stats
            )
@@ -747,6 +762,7 @@ app.get("/ambassador/:code", async (c) => {
       "Answer questions in the thread instead of reposting.",
       "Never add people to a group without asking them.",
     ],
+    isSimulated: sim,
   });
   return json(payload);
 });

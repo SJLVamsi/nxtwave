@@ -25,7 +25,7 @@ app.get("/r/:code", async (c) => {
   const db = c.env.DB;
   const user = await first<UserRow>(
     db,
-    "SELECT * FROM users WHERE UPPER(ref_code) = ? AND is_simulated = 0 LIMIT 1",
+    "SELECT * FROM users WHERE UPPER(ref_code) = ? LIMIT 1",
     code,
   );
   if (!user) {
