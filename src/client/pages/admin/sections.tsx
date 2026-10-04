@@ -35,7 +35,7 @@ export function Section({
     <section className={`rounded-md border border-[#DDE5F2] bg-white ${className}`}>
       <header className="flex flex-wrap items-baseline gap-x-2 gap-y-1 border-b border-[#DDE5F2] px-3 py-2">
         <h2 className="text-sm font-semibold text-[#1F3A93]">{title}</h2>
-        {subtitle ? <p className="text-[11px] text-[#2E333B]/60">{subtitle}</p> : null}
+        {subtitle ? <p className="text-[11px] text-[#2E333B]">{subtitle}</p> : null}
         {aside ? <div className="ml-auto">{aside}</div> : null}
       </header>
       <div className="p-3">{children}</div>
@@ -48,7 +48,7 @@ function Table({ head, children }: { head: string[]; children: ReactNode }) {
     <div className="overflow-x-auto">
       <table className="w-full min-w-[560px] border-collapse text-left text-xs">
         <thead>
-          <tr className="border-b border-[#DDE5F2] text-[11px] text-[#2E333B]/60">
+          <tr className="border-b border-[#DDE5F2] text-[11px] text-[#2E333B]">
             {head.map((heading) => (
               <th key={heading} className="px-2 py-1.5 font-medium">
                 {heading}
@@ -79,9 +79,9 @@ function Stat({
 }) {
   return (
     <div className="rounded-md border border-[#DDE5F2] bg-white px-3 py-2">
-      <p className="text-[11px] text-[#2E333B]/60">{label}</p>
+      <p className="text-[11px] text-[#2E333B]">{label}</p>
       <p className="mt-0.5 font-mono text-xl font-semibold tabular-nums text-[#2E333B]">{value}</p>
-      <p className="text-[11px] text-[#2E333B]/60">{detail}</p>
+      <p className="text-[11px] text-[#2E333B]">{detail}</p>
       {progress !== undefined ? (
         <div className="mt-1.5 h-1.5 w-full rounded-full bg-[#DDE5F2]">
           <div className="h-1.5 rounded-full bg-[#1F3A93]" style={{ width: `${progress}%` }} />
@@ -240,7 +240,7 @@ export function FunnelPanel({ steps }: { steps: FunnelStep[] }) {
             <span className="text-right font-mono tabular-nums text-[#2E333B]">
               {step.count}
               {step.conversionFromPrev !== null ? (
-                <span className="ml-1 text-[10px] opacity-60">{step.conversionFromPrev}%</span>
+                <span className="ml-1 text-[10px] text-[#5A6472]">{step.conversionFromPrev}%</span>
               ) : null}
             </span>
           </div>
@@ -265,7 +265,7 @@ export function ChannelsPanel({ rows }: { rows: ChannelRow[] }) {
         ))}
         {rows.length === 0 ? (
           <tr>
-            <Td className="text-[#2E333B]/60">No registrations yet.</Td>
+            <Td className="text-[#2E333B]">No registrations yet.</Td>
             <Td>{""}</Td>
             <Td>{""}</Td>
           </tr>
@@ -289,7 +289,7 @@ export function CollegesPanel({ rows }: { rows: AdminCollegeRow[] }) {
             <Td>
               <span className="font-medium">{row.shortName}</span>
               {row.collegeId === null ? (
-                <span className="ml-1 text-[10px] text-[#2E333B]/50">other</span>
+                <span className="ml-1 text-[10px] text-[#2E333B]">other</span>
               ) : null}
             </Td>
             <Td className="font-mono tabular-nums">{row.registrations}</Td>
@@ -299,7 +299,7 @@ export function CollegesPanel({ rows }: { rows: AdminCollegeRow[] }) {
               {row.hasAmbassador ? (
                 <span className="text-[#1F3A93]">covered</span>
               ) : (
-                <span className="rounded-sm bg-[#D7263D]/10 px-1.5 py-0.5 text-[10px] font-medium text-[#D7263D]">
+                <span className="rounded-sm bg-[#D7263D]/10 px-1.5 py-0.5 text-[10px] font-medium text-[#B01731]">
                   No ambassador yet
                 </span>
               )}
@@ -375,7 +375,7 @@ export function AmbassadorsPanel({
         ))}
         {rows.length === 0 ? (
           <tr>
-            <Td className="text-[#2E333B]/60">No ambassadors yet.</Td>
+            <Td className="text-[#2E333B]">No ambassadors yet.</Td>
             <Td>{""}</Td>
             <Td>{""}</Td>
             <Td>{""}</Td>
@@ -489,7 +489,7 @@ export function FlagsPanel({
   return (
     <Section title="Flags queue" subtitle="Fraud-guard hits stay in the database until reviewed">
       {open.length === 0 ? (
-        <p className="pb-2 text-xs text-[#2E333B]/60">No open flags.</p>
+        <p className="pb-2 text-xs text-[#2E333B]">No open flags.</p>
       ) : null}
       <Table head={["Name", "Contact", "Reason", "Status", "Actions"]}>
         {rows.map((row) => (
@@ -497,15 +497,15 @@ export function FlagsPanel({
             <Td>{row.name}</Td>
             <Td className="text-[11px]">
               <span className="block">{row.email}</span>
-              <span className="block text-[#2E333B]/60">{row.phone}</span>
+              <span className="block text-[#2E333B]">{row.phone}</span>
             </Td>
             <Td className="font-mono text-[11px]">{row.reason}</Td>
             <Td>
               <span
                 className={
                   row.status === "open"
-                    ? "rounded-sm bg-[#D7263D]/10 px-1.5 py-0.5 text-[10px] font-medium text-[#D7263D]"
-                    : "text-[11px] text-[#2E333B]/60"
+                    ? "rounded-sm bg-[#D7263D]/10 px-1.5 py-0.5 text-[10px] font-medium text-[#B01731]"
+                    : "text-[11px] text-[#2E333B]"
                 }
               >
                 {row.status}
@@ -565,7 +565,7 @@ export function BriefPanel({
       }
     >
       {brief === null && !loading ? (
-        <p className="text-xs text-[#2E333B]/60">No brief generated yet.</p>
+        <p className="text-xs text-[#2E333B]">No brief generated yet.</p>
       ) : null}
       {brief ? (
         <div className="space-y-2 text-xs text-[#2E333B]">
@@ -582,11 +582,11 @@ export function BriefPanel({
               {brief.aiParagraph}
             </p>
           ) : (
-            <p className="text-[11px] text-[#2E333B]/50">
+            <p className="text-[11px] text-[#2E333B]">
               AI summary unavailable — rule-based lines only.
             </p>
           )}
-          <p className="text-[10px] text-[#2E333B]/50">
+          <p className="text-[10px] text-[#2E333B]">
             Generated {new Date(brief.generatedAt).toLocaleString()}
           </p>
         </div>
@@ -629,7 +629,7 @@ export function ExportPanel({
       >
         {busy ? "Preparing…" : "Download registrations CSV"}
       </button>
-      <p className="mt-1.5 text-[11px] text-[#2E333B]/60">
+      <p className="mt-1.5 text-[11px] text-[#2E333B]">
         Includes name, email, phone, college, branch, UTM, referral and check-in status
         {includeSimulated ? " — simulated rows included." : " — simulated rows excluded."}
       </p>
@@ -646,7 +646,7 @@ export function AiUsagePanel({ usage }: { usage: AdminAiUsage }) {
     <Section title="AI usage today" subtitle="Every model call is tracked as an event">
       <p className="font-mono text-lg font-semibold tabular-nums text-[#2E333B]">{usage.callsToday}</p>
       {kinds.length === 0 ? (
-        <p className="text-[11px] text-[#2E333B]/60">No AI calls today.</p>
+        <p className="text-[11px] text-[#2E333B]">No AI calls today.</p>
       ) : (
         <ul className="mt-1 space-y-0.5 text-[11px] text-[#2E333B]/80">
           {kinds.map(([kind, count]) => (

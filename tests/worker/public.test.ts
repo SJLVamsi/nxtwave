@@ -139,21 +139,73 @@ describe("POST /api/register", () => {
     expect(user?.phone).toBe("+919876543210");
   });
 
-  it("duplicate email returns the existing Launchpad with a rotated token", async () => {
+  it("duplicate email without proof returns 409 DUPLICATE and mints nothing", async () => {
     const first = await registerJson();
-    const second = await registerJson({ phone: "9876500001" }, { ip: freshIp() });
+    const res = await register({ phone: "9876500001" }, { ip: freshIp() });
 
+    expect(res.status).toBe(409);
+    expect(res.headers.get("set-cookie")).toBeNull();
+    const body = (await res.json()) as Record<string, unknown>;
+    expect((body.error as { code?: string } | undefined)?.code).toBe("DUPLICATE");
+    expect(body.token).toBeUndefined();
+    expect(body.launchpadUrl).toBeUndefined();
+
+    // The victim's original token still works after the failed takeover.
+    const me = await SELF.fetch(`${base}/api/me?t=${encodeURIComponent(first.token)}`);
+    expect(me.status).toBe(200);
+  });
+
+  it("duplicate email with the existing token rotates and returns isReturning", async () => {
+    const first = await registerJson();
+    const res = await register(
+      { phone: "9876500001" },
+      { ip: freshIp(), headers: { authorization: `Bearer ${first.token}` } },
+    );
+
+    expect(res.status).toBe(200);
+    const second = RegisterResponseSchema.parse(await res.json());
     expect(second.isReturning).toBe(true);
     expect(second.seatNo).toBe(first.seatNo);
     expect(second.refCode).toBe(first.refCode);
     expect(second.token).not.toBe(first.token);
-    expect(second.launchpadUrl).toContain("/me?t=");
-    expect(await scalar("SELECT COUNT(*) AS n FROM users")).toBe(1);
+    expect(res.headers.get("set-cookie")).toContain("s60_token=");
+
+    const rotated = await SELF.fetch(`${base}/api/me?t=${encodeURIComponent(second.token)}`);
+    expect(rotated.status).toBe(200);
+    const stale = await SELF.fetch(`${base}/api/me?t=${encodeURIComponent(first.token)}`);
+    expect(stale.status).toBe(401);
   });
 
-  it("duplicate phone returns the existing Launchpad even with a new email", async () => {
+  it("duplicate email with the existing cookie rotates the token too", async () => {
     const first = await registerJson();
-    const second = await registerJson({ email: "other@example.com" }, { ip: freshIp() });
+    const res = await register(
+      { phone: "9876500001" },
+      { ip: freshIp(), cookie: `s60_token=${encodeURIComponent(first.token)}` },
+    );
+    expect(res.status).toBe(200);
+    const second = RegisterResponseSchema.parse(await res.json());
+    expect(second.isReturning).toBe(true);
+    expect(second.token).not.toBe(first.token);
+  });
+
+  it("rate limits duplicate attempts per identifier after 10 per hour", async () => {
+    await registerJson();
+    for (let i = 0; i < 10; i++) {
+      const res = await register({ phone: "9876500001" }, { ip: freshIp() });
+      expect(res.status).toBe(409);
+    }
+    const res = await register({ phone: "9876500001" }, { ip: freshIp() });
+    expect(res.status).toBe(429);
+    const err = await res.json<{ error: { code: string } }>();
+    expect(err.error.code).toBe("RATE_LIMITED");
+  });
+
+  it("duplicate phone returns the existing seat when the same user proves ownership", async () => {
+    const first = await registerJson();
+    const second = await registerJson(
+      { email: "other@example.com" },
+      { ip: freshIp(), headers: { authorization: `Bearer ${first.token}` } },
+    );
 
     expect(second.isReturning).toBe(true);
     expect(second.seatNo).toBe(first.seatNo);
@@ -162,7 +214,10 @@ describe("POST /api/register", () => {
 
   it("ignores self-referral: no referrals row for an existing user's own code", async () => {
     const first = await registerJson();
-    const res = await register({ refCode: first.refCode });
+    const res = await register(
+      { refCode: first.refCode },
+      { headers: { authorization: `Bearer ${first.token}` } },
+    );
     expect(res.status).toBe(200);
     const payload = RegisterResponseSchema.parse(await res.json());
     expect(payload.isReturning).toBe(true);
@@ -347,6 +402,19 @@ describe("GET /api/me", () => {
     expect(me.idea?.source).toBe("bank");
     expect(JSON.stringify(raw)).not.toContain("rahul@example.com");
     expect(JSON.stringify(raw)).not.toContain("9876543210");
+  });
+
+  it("resolves the real WS2 idea key idea:{branch}:{interest}:{variant}", async () => {
+    const a = await registerJson({ ideaKey: "idea:CSE/IT/AI-ML:placements:0" });
+    const res = await SELF.fetch(`${base}/api/me?t=${encodeURIComponent(a.token)}`);
+    expect(res.status).toBe(200);
+    const me = MeResponseSchema.parse(await res.json());
+    expect(me.idea).not.toBeNull();
+    expect(me.idea?.title).toBe("Placement Prep Buddy");
+    expect(me.idea?.branch).toBe("CSE/IT/AI-ML");
+    expect(me.idea?.interest).toBe("placements");
+    expect(me.idea?.variant).toBe(0);
+    expect(me.idea?.source).toBe("bank");
   });
 
   it("accepts an Authorization: Bearer token", async () => {

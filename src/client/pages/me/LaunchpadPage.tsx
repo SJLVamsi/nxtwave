@@ -15,6 +15,7 @@ import {
   whatsappShareUrl,
   type ShareContext,
 } from "./share";
+import { saveStoryImage } from "./story";
 import { cx, formatIst } from "./format";
 import {
   CopyButton,
@@ -201,11 +202,16 @@ function Launchpad({ data }: { data: MeResponse }) {
           <a
             href={storyImagePath(user.refCode)}
             download={`ship60-${user.refCode}-story.png`}
-            onClick={() => shareClicked("story")}
+            onClick={(event) => {
+              event.preventDefault();
+              shareClicked("story");
+              void saveStoryImage(user.refCode, `ship60-${user.refCode}-story.png`);
+            }}
             className="inline-flex min-h-11 items-center justify-center rounded-md border border-[#DDE5F2] px-4 text-sm font-bold text-[#2E333B]"
           >
             Download story image for Instagram
           </a>
+          <p className="mt-1 text-xs text-[#5A6472]">Long-press the image to save it.</p>
         </div>
       </Panel>
 

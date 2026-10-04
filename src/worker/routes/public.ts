@@ -39,6 +39,7 @@ import {
   hashToken,
   ipHashSalt,
   publicName,
+  sha256Hex,
 } from "../lib/auth";
 import { cachedJson } from "../lib/cache";
 import { all, count, first, nowIso, run, toBool, type CollegeRow, type UserRow } from "../lib/db";
@@ -69,6 +70,7 @@ function launchpadUrl(env: AppEnv, request: Request, token: string): string {
 }
 
 const TOKEN_MAX_AGE_SECONDS = TOKEN_COOKIE_DAYS * 86400;
+const DUPLICATE_RATE_LIMIT = { limit: 10, windowSeconds: 3600 } as const;
 
 function tokenSetCookie(token: string): string {
   return buildSetCookie(COOKIE_TOKEN, token, {
@@ -107,12 +109,35 @@ async function findByEmailOrPhone(
   return first<UserRow>(db, "SELECT * FROM users WHERE phone = ? LIMIT 1", phone);
 }
 
+/**
+ * A duplicate email/phone only ever returns a Launchpad when the request proves
+ * ownership of that same user (s60_token cookie, Authorization: Bearer, or ?t=).
+ * Without proof it mints nothing — otherwise knowing an email or phone number
+ * would be enough to take over the account (reviews/security.md C1).
+ */
 async function returningResponse(
   db: D1Database,
   existing: UserRow,
   env: AppEnv,
   request: Request,
 ): Promise<Response> {
+  const identifier = await sha256Hex(`${existing.email}|${existing.phone}`);
+  const limited = await rateLimit(
+    env.CACHE,
+    `register-dup:${identifier}`,
+    DUPLICATE_RATE_LIMIT.limit,
+    DUPLICATE_RATE_LIMIT.windowSeconds,
+  );
+  if (!limited.ok) return apiError(ERROR_CODES.RATE_LIMITED);
+
+  const proof = await getUserFromRequest(request, env);
+  if (!proof || proof.id !== existing.id) {
+    return apiError(
+      ERROR_CODES.DUPLICATE,
+      "This email or WhatsApp number already has a seat. Open your Launchpad from the link you saved.",
+    );
+  }
+
   const token = newToken();
   await run(db, "UPDATE users SET token_hash = ? WHERE id = ?", await hashToken(token), existing.id);
   return json(registerResponse(existing, token, true, env, request), {
@@ -200,8 +225,8 @@ app.post("/register", async (c) => {
     return apiError(ERROR_CODES.TURNSTILE_FAILED);
   }
 
-  // Duplicate email or phone never errors: return the existing Launchpad with a
-  // rotated token (PRD M1).
+  // Duplicate email/phone only returns the existing Launchpad when the request
+  // proves ownership of that user; otherwise it is a 409 DUPLICATE (M1 / C1).
   const existing = await findByEmailOrPhone(db, body.email, body.phone);
   if (existing) return returningResponse(db, existing, c.env, c.req.raw);
 

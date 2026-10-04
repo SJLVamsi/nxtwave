@@ -203,6 +203,18 @@ export function RegistrationForm({ idea, refCode, shareVariant, utm }: Registrat
     return next;
   }
 
+  // A field error stops being true the moment the field is edited; the
+  // submit-time banner also clears on the next edit (UX review H2).
+  function clearField(field: keyof FieldErrors) {
+    setSubmitError(null);
+    setErrors((current) => {
+      if (current[field] === undefined) return current;
+      const next = { ...current };
+      delete next[field];
+      return next;
+    });
+  }
+
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (submitting) return;
@@ -317,8 +329,8 @@ export function RegistrationForm({ idea, refCode, shareVariant, utm }: Registrat
           You&rsquo;re already registered
         </h3>
         <p className="mt-2 text-graphite/80">
-          That email or WhatsApp number already has a seat and a project. Open your Launchpad to
-          see it.
+          This email or WhatsApp number already has a seat. If this is you, open your Launchpad —
+          your browser remembers you.
         </p>
         <Link
           to={duplicateUrl ?? "/me"}
@@ -326,9 +338,6 @@ export function RegistrationForm({ idea, refCode, shareVariant, utm }: Registrat
         >
           Open my Launchpad
         </Link>
-        <p className="mt-3 text-sm text-graphite/70">
-          The same link was sent to the email or WhatsApp number you registered with.
-        </p>
       </div>
     );
   }
@@ -360,7 +369,10 @@ export function RegistrationForm({ idea, refCode, shareVariant, utm }: Registrat
             data-testid="register-name"
             label="Full name"
             value={name}
-            onChange={(event) => setName(event.target.value)}
+            onChange={(event) => {
+              setName(event.target.value);
+              clearField("name");
+            }}
             error={errors.name}
             autoComplete="name"
             placeholder="As it should appear on your certificate"
@@ -374,7 +386,10 @@ export function RegistrationForm({ idea, refCode, shareVariant, utm }: Registrat
             type="email"
             inputMode="email"
             value={email}
-            onChange={(event) => setEmail(event.target.value)}
+            onChange={(event) => {
+              setEmail(event.target.value);
+              clearField("email");
+            }}
             error={errors.email}
             autoComplete="email"
             placeholder="you@example.com"
@@ -388,7 +403,10 @@ export function RegistrationForm({ idea, refCode, shareVariant, utm }: Registrat
             type="tel"
             inputMode="numeric"
             value={phone}
-            onChange={(event) => setPhone(event.target.value.replace(/\D/g, "").slice(0, 10))}
+            onChange={(event) => {
+              setPhone(event.target.value.replace(/\D/g, "").slice(0, 10));
+              clearField("phone");
+            }}
             error={errors.phone}
             autoComplete="tel-national"
             placeholder="10-digit mobile number"
@@ -407,6 +425,7 @@ export function RegistrationForm({ idea, refCode, shareVariant, utm }: Registrat
             loading={colleges.isFetching}
             error={errors.college}
             onQueryChange={(query) => {
+              setSubmitError(null);
               if (collegeTimerRef.current !== null) window.clearTimeout(collegeTimerRef.current);
               collegeTimerRef.current = window.setTimeout(
                 () => setDebouncedCollegeQuery(query.trim()),
@@ -414,15 +433,17 @@ export function RegistrationForm({ idea, refCode, shareVariant, utm }: Registrat
               );
             }}
             onSelect={(option) => {
+              setSubmitError(null);
               if (option.id === OTHER_COLLEGE_ID) {
                 setCollege(null);
                 setCollegeOtherMode(true);
+                clearField("college");
                 return;
               }
               setCollege({ id: option.id, label: option.label });
               setCollegeOtherMode(false);
               setCollegeOther("");
-              setErrors((current) => ({ ...current, college: undefined }));
+              clearField("college");
             }}
             onClearSelection={() => {
               setCollege(null);
@@ -435,7 +456,10 @@ export function RegistrationForm({ idea, refCode, shareVariant, utm }: Registrat
               id="reg-college-other"
               label="Your college name"
               value={collegeOther}
-              onChange={(event) => setCollegeOther(event.target.value)}
+              onChange={(event) => {
+                setCollegeOther(event.target.value);
+                clearField("collegeOther");
+              }}
               error={errors.collegeOther}
               autoComplete="organization"
               placeholder="Type the full college name"
@@ -448,7 +472,10 @@ export function RegistrationForm({ idea, refCode, shareVariant, utm }: Registrat
               id="reg-branch"
               label="Branch"
               value={branch}
-              onChange={(event) => setBranch(event.target.value as Branch | "")}
+              onChange={(event) => {
+                setBranch(event.target.value as Branch | "");
+                clearField("branch");
+              }}
               error={errors.branch}
               placeholder="Pick your branch"
               options={BRANCHES.map((item) => ({ value: item, label: item }))}
@@ -458,7 +485,10 @@ export function RegistrationForm({ idea, refCode, shareVariant, utm }: Registrat
               id="reg-grad-year"
               label="Graduation year"
               value={String(gradYear)}
-              onChange={(event) => setGradYear(Number(event.target.value))}
+              onChange={(event) => {
+                setGradYear(Number(event.target.value));
+                setSubmitError(null);
+              }}
               options={GRAD_YEARS.map((year) => ({ value: String(year), label: String(year) }))}
               hint="Used to keep the workshop relevant to you."
             />
@@ -474,7 +504,10 @@ export function RegistrationForm({ idea, refCode, shareVariant, utm }: Registrat
                 data-testid="register-consent"
                 type="checkbox"
                 checked={consent}
-                onChange={(event) => setConsent(event.target.checked)}
+                onChange={(event) => {
+                  setConsent(event.target.checked);
+                  clearField("consent");
+                }}
                 aria-invalid={errors.consent ? true : undefined}
                 aria-describedby={errors.consent ? "reg-consent-error" : undefined}
                 className="mt-0.5 h-5 w-5 shrink-0 accent-ink"

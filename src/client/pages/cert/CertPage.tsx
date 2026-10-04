@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link, useParams } from "react-router";
+import { SIMULATED_LABEL } from "../../../shared/constants";
 import type { CertificateResponse } from "../../../shared/contracts";
 
 async function fetchCertificate(id: string): Promise<CertificateResponse | null> {
@@ -83,6 +84,11 @@ export default function CertPage() {
         >
           {data.valid ? "Verified certificate" : "Verification pending"}
         </span>
+        {data.isSimulated ? (
+          <span className="mt-4 ml-2 inline-block rounded-full border border-[#DDE5F2] bg-[#FFE45C] px-3 py-1 text-xs font-bold text-[#2E333B]">
+            {SIMULATED_LABEL}
+          </span>
+        ) : null}
         <p className="mt-4 break-all text-xs text-[#5A6472]">Certificate id: {data.certId}</p>
       </section>
       <div className="mt-5 flex flex-col gap-3">

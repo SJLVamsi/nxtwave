@@ -18,7 +18,7 @@ import {
 import { ERROR_CODES } from "../../shared/errors";
 import { IDEA_BANK } from "../../shared/idea-bank";
 import type { AppContext, AppEnv } from "../env";
-import { getAuthedUser } from "../lib/auth";
+import { getAuthedUser, publicName } from "../lib/auth";
 import { count, first, nowIso, run, type SubmissionRow } from "../lib/db";
 import { evaluateSubmission, fetchRepoContext, probeLivePage, validateTargetUrl } from "../lib/eval";
 import { recordEvent } from "../lib/events";
@@ -84,7 +84,7 @@ app.post("/", async (c) => {
   const { liveUrl, description } = body.data;
   const repoUrl = typeof body.data.repoUrl === "string" && body.data.repoUrl.length > 0 ? body.data.repoUrl : null;
 
-  const guard = validateTargetUrl(liveUrl);
+  const guard = await validateTargetUrl(liveUrl);
   if (!guard.ok) return apiError(ERROR_CODES.INVALID_INPUT, guard.reason);
 
   const id = newId("sub");
@@ -218,6 +218,7 @@ interface CertificateRow {
   idea_key: string | null;
   college_name: string | null;
   college_other: string | null;
+  is_simulated: number;
 }
 
 export function projectTitleFromIdeaKey(ideaKey: string | null): string | null {
@@ -235,6 +236,7 @@ async function loadCertificate(db: D1Database, env: AppEnv, certId: string): Pro
   const row = await first<CertificateRow>(
     db,
     `SELECT s.cert_id AS cert_id, s.status AS status, s.created_at AS created_at,
+            s.is_simulated AS is_simulated,
             u.name AS user_name, u.idea_key AS idea_key,
             c.name AS college_name, u.college_other AS college_other
      FROM submissions s
@@ -247,12 +249,13 @@ async function loadCertificate(db: D1Database, env: AppEnv, certId: string): Pro
   if (!row?.cert_id) return null;
   return {
     certId: row.cert_id,
-    name: row.user_name,
+    name: publicName(row.user_name),
     college: row.college_name ?? row.college_other ?? null,
     projectTitle: projectTitleFromIdeaKey(row.idea_key),
     issuedAt: row.created_at,
     workshopId: env.WORKSHOP_ID,
     valid: row.status === "evaluated",
+    isSimulated: row.is_simulated === 1,
   };
 }
 
@@ -304,6 +307,7 @@ function certPage(cert: CertificateResponse, baseUrl: string): string {
   .project { font-size: 18px; margin: 18px 0 2px; }
   .highlight { background: #ffe45c; padding: 0 4px; }
   .meta { font-size: 14px; color: #5a6472; margin: 6px 0; }
+  .simulated { color: #b01731; font-weight: 700; }
   .badge { display: inline-block; margin-top: 14px; padding: 6px 10px; border-radius: 999px; font-size: 13px; font-weight: 700; }
   .badge.ok { background: #e7f6ec; color: #1d6b3a; }
   .badge.pending { background: #fdecef; color: #b01731; }
@@ -331,6 +335,7 @@ function certPage(cert: CertificateResponse, baseUrl: string): string {
     <p class="meta">${escapeHtml(college)}</p>
     <p class="meta">Issued ${escapeHtml(formatIssuedAt(cert.issuedAt))}</p>
     <p class="meta">Workshop ${escapeHtml(cert.workshopId)}</p>
+    ${cert.isSimulated ? '<p class="meta simulated">Simulated data — this certificate belongs to a seeded demo row.</p>' : ""}
     <span class="badge ${cert.valid ? "ok" : "pending"}">${escapeHtml(statusLabel)}</span>
     <p class="id">Certificate id: ${escapeHtml(cert.certId)}<br />Verify any time at this address — ids are unique and unguessable.</p>
     <a class="home" href="${escapeHtml(baseUrl.replace(/\/$/, ""))}/">Build your first AI project in 60 minutes →</a>

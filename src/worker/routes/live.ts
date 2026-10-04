@@ -46,7 +46,14 @@ app.get("/:workshopId/ws", async (c) => {
     return apiError(ERROR_CODES.INVALID_INPUT, "Expected a WebSocket upgrade.");
   }
 
-  const headers = new Headers(c.req.raw.headers);
+  // Build fresh headers: never forward client x-s60-* identity headers, or an
+  // anonymous socket could check in as any user (reviews/security.md H1).
+  const headers = new Headers();
+  if (c.req.header("upgrade")?.toLowerCase() === "websocket") {
+    headers.set("Upgrade", "websocket");
+  }
+  const connection = c.req.header("connection");
+  if (connection?.toLowerCase().includes("upgrade")) headers.set("Connection", connection);
   headers.set("x-s60-workshop-id", workshopId);
   headers.set("x-s60-upgrade", "1");
 

@@ -11,12 +11,12 @@ classmate's referral link and the student's own generated project card.
 ## Current Position
 
 Phase: 4 of 5 (Hardening)
-Plan: 0 of 3 in current phase
-Status: Ready to execute
-Last activity: 2026-10-04 — GSD adopted; planning artifacts written; four review
-reports landed (`reviews/*.md`); fixes being dispatched as plans 04-01..03.
+Plan: 3 of 3 in current phase
+Status: Phase complete — ready for Phase 5 (Deploy)
+Last activity: 2026-10-04 — plans 04-01..03 executed by three parallel subagents;
+`npm run verify` green (typecheck, lint 0 errors, 122 unit tests, 12 e2e).
 
-Progress: [░░░░░░░░░░] 0% of Phase 4
+Progress: [██████████] 100% of Phase 4
 
 ## Performance Metrics
 
@@ -40,20 +40,23 @@ Progress: [░░░░░░░░░░] 0% of Phase 4
 
 Full log in `DECISIONS.md`. Recent decisions affecting current work:
 
+- Phase 4: duplicate registration requires proof of ownership; live identity only
+  from token/cookie; Turnstile config fail-closed; DNS-aware SSRF; CSV/brief
+  injection neutralised; idea keys resolve in all formats; admin defaults to
+  simulated when only seeded rows exist.
 - I2.x integration fixes: removed API shadowing, 101 pass-through, leaderboard
   simulated rows + labels, KV invalidation, `remoteBindings:false`, ASSETS binding.
-- Phase 4 rulings pending: duplicate registration returns no token without proof;
-  live identity from token/cookie only; Turnstile fails closed outside dev.
 
 ### Pending Todos
 
-- Security Mediums/Lows not in Phase 4 scope are tracked in `reviews/security.md`
-  (L1 token-in-URL logging, L5 admin session revocation) and logged as accepted.
+- Security Lows accepted for the demo and logged: L1 token in `?t=` appears in
+  observability logs (consider URL fragment post-demo), L5 admin session not
+  revocable without rotating `SESSION_SECRET`.
 
 ### Blockers/Concerns
 
-- Deploy needs human gates: `wrangler login`, Turnstile widget, secrets, remote
-  writes (AGENTS rule 10).
+- Phase 5 needs human gates: `wrangler login`, Turnstile widget, secret values,
+  confirmation before remote writes/deploy (AGENTS rule 10).
 
 ## Deferred Items
 

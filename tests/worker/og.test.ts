@@ -8,6 +8,7 @@ import {
   whatsappMessage,
   whatsappShareUrl,
 } from "../../src/client/pages/me/share";
+import { projectTitle } from "../../src/worker/routes/og";
 
 const base = "https://ship60.test";
 
@@ -58,6 +59,21 @@ beforeAll(async () => {
       "sub1", "u1", "https://example.com", null, "Gully cricket commentator",
       "evaluated", 87, null, null, 1, "2026-10-11T14:00:00.000Z",
     ),
+    // WS2 stores registrations with the `idea:{branch}:{interest}:{variant}` key.
+    env.DB.prepare(
+      `INSERT INTO users (
+        id, name, email, phone, college_id, college_other, branch, grad_year, role,
+        ref_code, referred_by, token_hash, seat_no, idea_key,
+        utm_source, utm_medium, utm_campaign, utm_content, share_variant,
+        ip_hash, user_agent, consent_at, flag_reason, flag_status, is_simulated, created_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    ).bind(
+      "u2", "Priya Sharma", "priya@example.com", "+919876543211", "col1", null,
+      "CSE/IT/AI-ML", 2027, "student",
+      "PRIYA9X2", null, "token-hash-2", 8, "idea:CSE/IT/AI-ML:placements:0",
+      null, null, null, null, null,
+      null, null, "2026-10-01T00:00:00.000Z", null, null, 0, "2026-10-01T00:00:00.000Z",
+    ),
   ]);
 });
 
@@ -104,6 +120,17 @@ describe("OG images", () => {
     expect(storyInfo.width).toBe(1080);
     expect(storyInfo.height).toBe(1920);
     expect(storyInfo.height).not.toBe(landscapeInfo.height);
+  });
+
+  it("resolves the real WS2 idea key to the generated project title", async () => {
+    expect(projectTitle("idea:CSE/IT/AI-ML:placements:0")).toBe("Placement Prep Buddy");
+    expect(projectTitle("CSE/IT/AI-ML|cricket")).toBe("Gully Cricket Commentator");
+    expect(projectTitle(null)).toBe("My first AI project");
+
+    const { response, bytes } = await getImage("/og/PRIYA9X2.png");
+    expect(response.status).toBe(200);
+    expect(response.headers.get("content-type")).toContain("image/png");
+    expect(pngInfo(bytes).signature).toBe("\x89PNG");
   });
 
   it("serves a shipped card for a submission and falls back for unknown ids", async () => {

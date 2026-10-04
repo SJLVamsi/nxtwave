@@ -423,6 +423,33 @@ const MODULES = [
   },
 ];
 
+const CURATED_AI_NOTES = [
+  {
+    title: "Vitest on Workers — the package named in the brief had a successor",
+    markdown:
+      "**We asked AI:** which Vitest integration to use for the Workers pool. " +
+      "**AI suggested:** the package named in the PRD, `@cloudflare/vitest-pool-workers`. " +
+      "**We changed it:** current docs describe `@cloudflare/vitest-plugin` with `cloudflareTest()`, so that is what shipped (P0.2). " +
+      "**Rejected:** the old pool package — it would pin Vitest 4 while the template ships Vitest 4.1.",
+  },
+  {
+    title: "Workers AI model ids — verify the catalog, do not trust the brief",
+    markdown:
+      "**We asked AI:** which OpenAI-compatible model ids to call on Workers AI. " +
+      "**AI suggested:** `@cf/meta/llama-3.1-8b-instruct` from the PRD. " +
+      "**We changed it:** `@cf/meta/llama-3.1-8b-instruct-fast` for ideas and the daily brief, and `@cf/meta/llama-3.3-70b-instruct-fp8-fast` for the evaluator, after checking the October 2026 catalog (P0.5). " +
+      "**Rejected:** larger Llama 4 models — more neurons per call with no measured quality need for a three-field JSON card.",
+  },
+  {
+    title: "Share-card fonts — inline subset WOFF instead of a runtime fetch",
+    markdown:
+      "**We asked AI:** how to render Archivo inside OG PNGs in a Worker. " +
+      "**AI suggested:** `loadGoogleFont()` at render time, the common workers-og example. " +
+      "**We changed it:** inline the base64 subset WOFF in `src/worker/routes/og-font.ts`, decoded once per isolate (WS4.1). " +
+      "**Rejected:** the runtime Google Fonts fetch (network dependency on every render) and an ASSETS binding that did not exist yet.",
+  },
+];
+
 export default function BuildPage() {
   return (
     <main className="min-h-screen bg-[#FBFCFE] px-4 py-8 text-[#2E333B]">
@@ -441,20 +468,58 @@ export default function BuildPage() {
         </p>
 
         <section className="mt-8 rounded border border-[#DDE5F2] bg-white p-4 shadow-sm sm:p-6">
+          <h2 className="text-lg font-semibold text-[#1F3A93]">
+            What we asked AI, what it suggested, what we rejected
+          </h2>
+          <p className="mt-1 text-sm text-[#5A6472]">
+            Three build-time decisions, curated from the full log below. Each one is a real
+            alternative that was considered and then changed or rejected.
+          </p>
+          <div className="mt-4 grid gap-3 lg:grid-cols-3">
+            {CURATED_AI_NOTES.map((note) => (
+              <article
+                key={note.title}
+                className="rounded border-l-4 border-[#1F3A93] bg-[#F4F7FD] p-3"
+              >
+                <h3 className="text-sm font-semibold text-[#2E333B]">{note.title}</h3>
+                <div className="mt-2">
+                  <Markdown markdown={note.markdown} />
+                </div>
+              </article>
+            ))}
+          </div>
+          <p className="mt-3 text-xs">
+            <a href="#decision-log" className="font-medium text-[#1F3A93] underline">
+              Read the full decision log →
+            </a>
+          </p>
+        </section>
+
+        <section className="mt-8 rounded border border-[#DDE5F2] bg-white p-4 shadow-sm sm:p-6">
           <h2 className="text-lg font-semibold text-[#1F3A93]">Architecture</h2>
           <p className="mt-1 text-sm text-[#2E333B]">
             The SPA and the API ship from the same Worker (Workers Static Assets). D1 is the system
             of record; KV caches ideas and leaderboards; a Durable Object runs the live room;
             Workers AI generates ideas, evaluations and the daily brief.
           </p>
-          <div className="mt-4 overflow-x-auto">
+          <div
+            className="mt-4 overflow-x-auto"
+            role="region"
+            aria-label="Architecture diagram"
+            tabIndex={0}
+          >
             <ArchitectureDiagram />
           </div>
         </section>
 
         <section className="mt-8">
           <h2 className="text-lg font-semibold text-[#1F3A93]">What each module does</h2>
-          <div className="mt-3 overflow-x-auto rounded border border-[#DDE5F2] bg-white shadow-sm">
+          <div
+            className="mt-3 overflow-x-auto rounded border border-[#DDE5F2] bg-white shadow-sm"
+            role="region"
+            aria-label="Module table"
+            tabIndex={0}
+          >
             <table className="w-full border-collapse text-left text-sm">
               <thead>
                 <tr className="border-b border-[#DDE5F2] text-xs tracking-wide text-[#1F3A93] uppercase">
@@ -472,7 +537,7 @@ export default function BuildPage() {
                       <code className="text-[#1F3A93]">{row.where}</code>
                     </td>
                     <td className="px-4 py-2.5 text-[#2E333B]">{row.what}</td>
-                    <td className="px-4 py-2.5 text-[#6E7BA6]">{row.ws}</td>
+                    <td className="px-4 py-2.5 text-[#5A6472]">{row.ws}</td>
                   </tr>
                 ))}
               </tbody>
@@ -480,9 +545,12 @@ export default function BuildPage() {
           </div>
         </section>
 
-        <section className="mt-8 rounded border border-[#DDE5F2] bg-white p-4 shadow-sm sm:p-6">
+        <section
+          id="decision-log"
+          className="mt-8 rounded border border-[#DDE5F2] bg-white p-4 shadow-sm sm:p-6"
+        >
           <h2 className="text-lg font-semibold text-[#1F3A93]">Decision log (from DECISIONS.md)</h2>
-          <p className="mt-1 text-sm text-[#6E7BA6]">
+          <p className="mt-1 text-sm text-[#5A6472]">
             Options considered, the choice, why, and what was rejected — a live view of the file,
             not a copy.
           </p>
@@ -491,7 +559,7 @@ export default function BuildPage() {
           </div>
         </section>
 
-        <footer className="mt-10 border-t border-[#DDE5F2] pt-4 text-xs text-[#6E7BA6]">
+        <footer className="mt-10 border-t border-[#DDE5F2] pt-4 text-xs text-[#5A6472]">
           Ship60 demo build notes. Simulated data is generated by <code>scripts/seed.ts</code> and
           always labelled &quot;Simulated data&quot;.{" "}
           <a href="/" className="underline">

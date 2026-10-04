@@ -2,9 +2,10 @@
  * Reconstruct an IdeaCard from `users.idea_key`, which is the only idea data the
  * registration insert persists (no extra column in PRD §6.4).
  *
- * WS2 stores keys as `branch|interest` or `branch|interest|variant`; a JSON blob
- * is also accepted so a stored full card survives. Falls back to the static bank,
- * which covers every branch × interest (Phase 0, decision P0.8).
+ * WS2 stores keys as `idea:{branch}:{interest}:{variant}` (e.g.
+ * `idea:CSE/IT/AI-ML:placements:0`); seed data uses `branch|interest[|variant]`;
+ * a JSON blob is also accepted so a stored full card survives. Falls back to the
+ * static bank, which covers every branch × interest (Phase 0, decision P0.8).
  */
 import { BRANCHES, INTERESTS, type Branch, type Interest } from "../../shared/constants";
 import { IdeaCardSchema, type IdeaCard } from "../../shared/contracts";
@@ -24,13 +25,22 @@ function parseJsonCard(key: string): IdeaCard | null {
   return parsed.success ? parsed.data : null;
 }
 
+function splitStoredKey(key: string): [string, string, string | undefined] {
+  if (key.startsWith("idea:")) {
+    const [branch, interest, variant] = key.slice("idea:".length).split(":");
+    return [branch ?? "", interest ?? "", variant];
+  }
+  const [branch, interest, variant] = key.split("|");
+  return [branch ?? "", interest ?? "", variant];
+}
+
 export function resolveIdeaCard(key: string | null | undefined): IdeaCard | null {
   if (!key) return null;
   const trimmed = key.trim();
   if (!trimmed) return null;
   if (trimmed.startsWith("{")) return parseJsonCard(trimmed);
 
-  const [branchRaw, interestRaw, variantRaw] = trimmed.split("|");
+  const [branchRaw, interestRaw, variantRaw] = splitStoredKey(trimmed);
   const branch: Branch | null = (BRANCHES as readonly string[]).includes(branchRaw)
     ? (branchRaw as Branch)
     : null;

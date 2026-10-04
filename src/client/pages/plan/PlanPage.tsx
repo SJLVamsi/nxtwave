@@ -73,9 +73,7 @@ export default function PlanPage() {
       <header className="plan-chrome sticky top-0 z-10 border-b border-[#DDE5F2] bg-[#FBFCFE]/95 backdrop-blur">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-2 px-4 py-3">
           <div>
-            <p className="text-xs font-semibold tracking-widest text-[#1F3A93] uppercase">
-              Ship60 · growth plan
-            </p>
+            <p className="text-xs font-semibold text-[#1F3A93]">Ship60 · growth plan</p>
             <p className="text-sm text-[#2E333B]">
               Slide {index + 1} of {SLIDES.length} — {current.label}
             </p>

@@ -4,7 +4,7 @@
  * 5 s timeout, 200 KB body cap.
  */
 import { readCappedText } from "./limit";
-import { validateTargetUrl } from "./ssrf";
+import { validateRedirect, validateTargetUrl, type UrlGuardOptions } from "./ssrf";
 
 export interface LiveProbe {
   ok: boolean;
@@ -24,7 +24,7 @@ const USER_AGENT = "Ship60Bot/1.0 (+https://ship60.dev; project check)";
 
 const REDIRECT_STATUSES = new Set([301, 302, 303, 307, 308]);
 
-export async function probeLivePage(rawUrl: string): Promise<LiveProbe> {
+export async function probeLivePage(rawUrl: string, options: UrlGuardOptions = {}): Promise<LiveProbe> {
   const base: LiveProbe = {
     ok: false,
     url: rawUrl,
@@ -36,7 +36,7 @@ export async function probeLivePage(rawUrl: string): Promise<LiveProbe> {
     error: null,
   };
 
-  let target = validateTargetUrl(rawUrl);
+  let target = await validateTargetUrl(rawUrl, options);
   if (!target.ok) return { ...base, error: target.reason };
 
   const started = Date.now();
@@ -63,7 +63,7 @@ export async function probeLivePage(rawUrl: string): Promise<LiveProbe> {
       if (!location) {
         return { ...base, finalUrl: target.url.toString(), status: response.status, responseMs: Date.now() - started, error: "Redirect without a destination." };
       }
-      const next = validateTargetUrl(new URL(location, target.url).toString());
+      const next = await validateRedirect(location, target.url, options);
       if (!next.ok) {
         return { ...base, finalUrl: target.url.toString(), status: response.status, responseMs: Date.now() - started, error: next.reason };
       }

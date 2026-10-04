@@ -41,6 +41,9 @@ Ship60 is a referral-powered registration engine for NxtWave's free workshop
 10. **Stop and ask the human** only for: `wrangler login`, creating the Turnstile
     widget, choosing secret values, and confirming before any `--remote` write or
     `wrangler deploy`. Otherwise keep moving and log assumptions in `DECISIONS.md`.
+11. **Agent log.** Every dispatched subagent gets a row in the Agent log below (who,
+    what, outcome, evidence path, commit) at dispatch time, updated when it reports.
+    The orchestrator maintains this table; subagents never edit it.
 
 ## Repo map
 
@@ -106,3 +109,37 @@ npm run smoke -- --url   # smoke all public routes (WS9)
 - Workers AI models in use (verified against the model catalog, Oct 2026):
   `@cf/meta/llama-3.1-8b-instruct-fast` (ideas/brief),
   `@cf/meta/llama-3.3-70b-instruct-fp8-fast` (evaluator).
+
+## Agent log
+
+Every dispatched subagent gets a row here at dispatch time, updated when it reports
+(rule 11). Evidence paths are relative to the repo root. Orchestrator commits are
+noted for traceability.
+
+| Date | Agent | Task | Outcome | Evidence | Commit |
+|------|-------|------|---------|----------|--------|
+| 2026-10-04 | Orchestrator | Phase 0: contracts, scaffold, migration, libs, docs | done | `src/shared/*`, `migrations/0001_init.sql`, `AGENTS.md` | `869f6cd` |
+| 2026-10-04 | WS1 implementer | Core API + referrals (register, me, leaderboards, events, colleges, ambassador kit, `/r/:code`) | done — 30 tests | `.superpowers/sdd/MASTER_PROMPT/reports/WS1-report.md` | `afa6b31` |
+| 2026-10-04 | WS2 implementer | Idea engine: cache, AI + bank fallback, quality filter, warm script | done — 11 tests | reports/WS2-report.md, `scripts/warm-ideas.ts` | `afa6b31` |
+| 2026-10-04 | WS3 implementer | Design tokens + 9 components + landing page | done — Lighthouse 98/100/100/91, screenshots in `reviews/ws3/` | reports/WS3-report.md | `afa6b31` |
+| 2026-10-04 | WS4 implementer | OG cards, Launchpad, leaderboard, ambassador pages | done — 9 tests, PNG fixtures inspected | reports/WS4-report.md, `tests/fixtures/og/` | `afa6b31` |
+| 2026-10-04 | WS5 implementer | Admin war room API + UI + CSV + brief + time-lapse | done — 27 tests vs raw SQL | reports/WS5-report.md | `afa6b31` |
+| 2026-10-04 | WS6 implementer | LiveRoom DO (SQLite + hibernation), live routes/pages | done — 14 tests, 500-socket load 0 errors | reports/WS6-report.md, `tests/worker/live-load.ts` | `afa6b31` |
+| 2026-10-04 | WS7 implementer | Evaluator (SSRF, injection-safe), certificates, cron | done — 12 tests | reports/WS7-report.md | `afa6b31` |
+| 2026-10-04 | WS8 implementer | Deterministic simulator, `/plan` deck, `/build`, README | done — seed 520, 5-page PDF, determinism check | reports/WS8-report.md | `afa6b31` |
+| 2026-10-04 | WS9 implementer | Playwright harness, e2e specs, smoke script | done — 12 e2e green after integration | reports/WS9-report.md, `tests/e2e/` | `afa6b31` |
+| 2026-10-04 | Orchestrator | Phase 2 integration: unshadow API mounts, 101 pass-through, KV invalidation, contracts, dev config | done — full verify green | `DECISIONS.md` §I2 | `afa6b31` |
+| 2026-10-04 | Security reviewer | Read-only security audit | 1 Critical, 1 High, 6 Medium, 5 Low | `reviews/security.md` | `e8e8926` |
+| 2026-10-04 | Mobile/perf reviewer | Read-only mobile + performance audit | 1 High, 1 Medium, 2 Low; LCP 1244 ms, JS 106.9 KB gzip | `reviews/mobile-performance.md` | `e8e8926` |
+| 2026-10-04 | UX/copy reviewer | Read-only student-journey + copy audit | 1 Critical, 6 High, 14 Medium, 8 Low | `reviews/ux-copy.md` | `e8e8926` |
+| 2026-10-04 | Judge reviewer | Read-only evaluator role-play | 8.1/10; 3 highest-impact changes | `reviews/judge.md` | `e8e8926` |
+| 2026-10-04 | GSD SDK | `gsd-sdk init @PRD.md` bootstrap | partial — config written, LLM synthesis failed (no credentials) | `.planning/config.json` | `17a83d0` |
+| 2026-10-04 | Orchestrator | GSD planning artifacts + hardening plans + contracts | done | `.planning/PROJECT.md`, `ROADMAP.md`, `REQUIREMENTS.md`, `STATE.md`, `phases/04-hardening/*` | Phase 4 commit |
+| 2026-10-04 | 04-01 implementer | GSD plan 04-01: duplicate takeover, live header forgery, idea key, cron copy | done — 54 tests | `.planning/phases/04-hardening/04-01-SUMMARY.md` | Phase 4 commit |
+| 2026-10-04 | 04-02 implementer | GSD plan 04-02: CSV injection, brief injection, DNS SSRF, cert PII, OG keys, admin sim default | done — 122 worker tests | `.planning/phases/04-hardening/04-02-SUMMARY.md` | Phase 4 commit |
+| 2026-10-04 | 04-03 implementer | GSD plan 04-03: card scroll, error clearing, story share, `_headers`, preload, contrast, plan/build/cert | done — axe 0 serious, 12 e2e | `.planning/phases/04-hardening/04-03-SUMMARY.md` | Phase 4 commit |
+
+**Maintenance:** append a row the moment a subagent is dispatched (status `running`),
+then update outcome/evidence/commit when it reports. Never delete rows; corrections go
+in the Outcome cell.
+

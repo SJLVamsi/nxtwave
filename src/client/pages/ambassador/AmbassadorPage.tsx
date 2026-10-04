@@ -14,6 +14,7 @@ import {
   whatsappShareUrl,
   type ShareContext,
 } from "../me/share";
+import { saveStoryImage } from "../me/story";
 import { CopyButton, ErrorState, LoadingState, PageShell, Panel, SectionTitle } from "../me/ui";
 
 const FALLBACK_CHECKLIST = [
@@ -105,12 +106,17 @@ export default function AmbassadorPage() {
           <a
             href={storyImagePath(data.code)}
             download={`ship60-${data.code}-story.png`}
-            onClick={() => shareClicked("story")}
+            onClick={(event) => {
+              event.preventDefault();
+              shareClicked("story");
+              void saveStoryImage(data.code, `ship60-${data.code}-story.png`);
+            }}
             className="inline-flex min-h-11 items-center rounded-md border border-[#DDE5F2] px-3 text-sm font-bold text-[#2E333B]"
           >
             Download story image
           </a>
         </div>
+        <p className="mt-1.5 text-xs text-[#5A6472]">Long-press the image to save it.</p>
         <p className="mt-3 text-sm">
           Best posting window: <span className="font-bold">{data.postingWindow || "8–10 PM"}</span>
         </p>

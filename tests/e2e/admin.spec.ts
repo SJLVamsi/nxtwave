@@ -4,7 +4,13 @@
  * `playwright.config.ts` (matches `tests/worker`).
  */
 import { test, expect } from "@playwright/test";
-import { ADMIN_PASSWORD, assertAppRendered, blockedReason, endpointGaps } from "./helpers";
+import {
+  ADMIN_PASSWORD,
+  assertAppRendered,
+  blockedReason,
+  endpointGaps,
+  fakeClientIp,
+} from "./helpers";
 import { admin } from "./selectors";
 
 test("admin login shows headline numbers, pacing chart and flags queue (WS5)", async ({
@@ -22,6 +28,9 @@ test("admin login shows headline numbers, pacing chart and flags queue (WS5)", a
   ]);
   test.skip(gaps.length > 0, blockedReason(gaps));
 
+  // Fresh IP per run: the admin-login limiter (10/h/IP) survives between local
+  // runs in the persistent KV, so a fixed IP exhausts itself after a few runs.
+  await page.setExtraHTTPHeaders({ "cf-connecting-ip": fakeClientIp() });
   await page.goto("/admin");
   await assertAppRendered(page, "WS5 /admin");
   const ui = admin(page);

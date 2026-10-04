@@ -1,6 +1,11 @@
 import { createScheduledController, env } from "cloudflare:test";
 import { afterEach, describe, expect, it } from "vitest";
-import { buildReminderMessage, handleScheduled, REMINDER_SPECS } from "../../src/worker/cron";
+import {
+  buildAmbassadorNote,
+  buildReminderMessage,
+  handleScheduled,
+  REMINDER_SPECS,
+} from "../../src/worker/cron";
 
 const HOUR_MS = 60 * 60 * 1000;
 
@@ -27,8 +32,10 @@ describe("cron reminders", () => {
       "json",
     );
     expect(record).toMatchObject({ kind: "h2", channel: "log", dueAt: due });
-    expect(record?.message).toContain("Register:");
-    expect(record?.message).toContain("free workshop starts");
+    expect(record?.message).toContain("starts");
+    expect(record?.message).not.toContain("Register:");
+    expect(record?.message).not.toContain("0 colleges");
+    expect(record?.message).not.toContain("ask the group admin");
   });
 
   it("does nothing outside a reminder window", async () => {
@@ -48,11 +55,26 @@ describe("cron reminders", () => {
     expect(again?.sentAt).toBe(stored?.sentAt);
   });
 
-  it("builds a plain-text message with real counts only", () => {
+  it("builds a student-facing message with no ambassador instructions", () => {
     const message = buildReminderMessage(env, "D-1 evening", { registrations: 320, colleges: 24 });
-    expect(message).toContain("320 students from 24 colleges");
-    expect(message).toContain(env.PUBLIC_BASE_URL);
+    expect(message).toContain("Your NxtWave AI workshop starts");
+    expect(message).toContain("Bring a laptop");
+    expect(message).not.toContain("320 students");
+    expect(message).not.toContain("0 colleges");
+    expect(message).not.toContain("ask the group admin");
+    expect(message).not.toContain("Register:");
+
     const empty = buildReminderMessage(env, "D-1 evening", { registrations: 0, colleges: 0 });
-    expect(empty).toContain("Seats are open now.");
+    expect(empty).toContain("starts");
+    expect(empty).not.toContain("0 colleges");
+    expect(empty).not.toContain("Seats are open now.");
+  });
+
+  it("keeps ambassador copy in a separate note and omits it while counts are zero", () => {
+    const note = buildAmbassadorNote({ registrations: 320, colleges: 24 });
+    expect(note).toContain("320 students from 24 colleges");
+    expect(note).toContain("ask the group admin");
+    expect(buildAmbassadorNote({ registrations: 0, colleges: 0 })).toBeNull();
+    expect(buildAmbassadorNote({ registrations: 5, colleges: 0 })).toBeNull();
   });
 });

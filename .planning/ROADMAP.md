@@ -13,7 +13,7 @@ and handoff report.
 - [x] **Phase 1: Foundation** - Contracts, scaffold, migrations, shared libs, docs
 - [x] **Phase 2: Core loop** - Registration, referrals, Launchpad, share cards, leaderboards, admin, ideas, plan/seed
 - [x] **Phase 3: Live & evaluation** - Live room, evaluator, certificates, reminders, e2e harness
-- [ ] **Phase 4: Hardening** - Close security/correctness/UX findings from the four reviews
+- [x] **Phase 4: Hardening** - Close security/correctness/UX findings from the four reviews
 - [ ] **Phase 5: Deploy & handoff** - Real D1/KV/Turnstile/secrets, deploy, smoke, report
 
 ## Phase Details
@@ -57,9 +57,9 @@ and handoff report.
   2. Real registrations resolve their project on Launchpad/share/OG; share links use the deploy host
   3. `npm run verify` green; every fix committed with a DECISIONS entry
 **Plans**: 3 plans
-- [ ] 04-01: Security-critical backend fixes
-- [ ] 04-02: Correctness fixes (idea keys, base URL, ambassador kits, admin defaults)
-- [ ] 04-03: Client UX, performance and infra fixes
+- [x] 04-01: Security-critical backend fixes
+- [x] 04-02: Correctness fixes (idea keys, base URL, ambassador kits, admin defaults)
+- [x] 04-03: Client UX, performance and infra fixes
 
 ### Phase 5: Deploy & handoff
 **Goal**: Live `workers.dev` URL serving the real core loop, with a production smoke pass.
@@ -80,5 +80,5 @@ and handoff report.
 | 1. Foundation | complete | Complete | 2026-10-04 |
 | 2. Core loop | complete | Complete | 2026-10-04 |
 | 3. Live & evaluation | complete | Complete | 2026-10-04 |
-| 4. Hardening | 0/3 | In progress | - |
+| 4. Hardening | 3/3 | Complete | 2026-10-04 |
 | 5. Deploy & handoff | 0/1 | Not started | - |

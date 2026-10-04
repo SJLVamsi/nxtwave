@@ -1,20 +1,83 @@
 /**
  * SSRF guard for user-supplied URLs (PRD M9, AGENTS.md rule 9).
  *
- * Options considered: blocklist-only regex vs URL parse + host classification.
- * Choice: parse with `URL`, require http/https, allow only ports 80/443, and
- * reject loopback/private/link-local/CGNAT/metadata hosts, including the common
- * numeric encodings of 127.0.0.1. Rejected: DNS-over-HTTPS pre-resolution — it
- * adds a second request per submission (latency + cost) and still leaves a
- * TOCTOU window, so it was not worth it here; the limitation is documented in
- * DECISIONS.md (WS7).
+ * Literal hosts are classified directly; every hostname is additionally resolved
+ * (A and AAAA) before it is fetched, so a public name that points at a private
+ * address (`localtest.me`, `127.0.0.1.nip.io`) is rejected at validation time.
+ * The default resolver uses Cloudflare DoH JSON with a 1.5 s timeout and a 60 s
+ * in-isolate cache; tests inject a resolver so no network I/O happens.
  */
 
 export type UrlGuardResult = { ok: true; url: URL } | { ok: false; reason: string };
 
-const ALLOWED_PORTS = new Set(["", "80", "443"]);
+export type DnsResolver = (hostname: string) => Promise<string[]>;
 
-export function validateTargetUrl(raw: string): UrlGuardResult {
+export interface UrlGuardOptions {
+  /** Injectable DNS resolver. Defaults to Cloudflare DoH JSON. */
+  resolve?: DnsResolver;
+}
+
+const ALLOWED_PORTS = new Set(["", "80", "443"]);
+const DNS_TIMEOUT_MS = 1_500;
+const DNS_CACHE_TTL_MS = 60_000;
+const DNS_CACHE_MAX_ENTRIES = 512;
+const DOH_ENDPOINT = "https://cloudflare-dns.com/dns-query";
+const DOH_A = 1;
+const DOH_AAAA = 28;
+
+interface DnsCacheEntry {
+  expiresAt: number;
+  addresses: string[];
+}
+
+const dnsCache = new Map<string, DnsCacheEntry>();
+
+/** Default resolver: Cloudflare DoH JSON, A + AAAA, 1.5 s timeout, 60 s cache. */
+async function resolveViaDoh(hostname: string): Promise<string[]> {
+  const key = hostname.toLowerCase();
+  const cached = dnsCache.get(key);
+  if (cached && cached.expiresAt > Date.now()) return cached.addresses;
+
+  const addresses: string[] = [];
+  for (const type of ["A", "AAAA"]) {
+    const response = await fetch(
+      `${DOH_ENDPOINT}?name=${encodeURIComponent(key)}&type=${type}`,
+      {
+        headers: { accept: "application/dns-json" },
+        signal: AbortSignal.timeout(DNS_TIMEOUT_MS),
+      },
+    );
+    if (!response.ok) throw new Error(`DNS lookup failed with ${response.status}`);
+    const body = (await response.json()) as {
+      Answer?: { type?: number; data?: string }[];
+    };
+    for (const answer of body.Answer ?? []) {
+      if (answer.type !== DOH_A && answer.type !== DOH_AAAA) continue;
+      const data = answer.data?.trim();
+      if (data) addresses.push(data);
+    }
+  }
+
+  dnsCache.set(key, { expiresAt: Date.now() + DNS_CACHE_TTL_MS, addresses });
+  if (dnsCache.size > DNS_CACHE_MAX_ENTRIES) {
+    const now = Date.now();
+    for (const [cacheKey, entry] of dnsCache) {
+      if (entry.expiresAt <= now) dnsCache.delete(cacheKey);
+    }
+  }
+  return addresses;
+}
+
+function isLiteralHost(hostname: string): boolean {
+  const host = hostname.toLowerCase().replace(/^\[|\]$/g, "");
+  if (/^\d{1,3}(\.\d{1,3}){3}$/.test(host)) return true;
+  return host.includes(":");
+}
+
+export async function validateTargetUrl(
+  raw: string,
+  options: UrlGuardOptions = {},
+): Promise<UrlGuardResult> {
   let url: URL;
   try {
     url = new URL(raw);
@@ -33,7 +96,39 @@ export function validateTargetUrl(raw: string): UrlGuardResult {
   if (isPrivateHostname(url.hostname)) {
     return { ok: false, reason: "That address is not reachable from the public internet." };
   }
+  if (isLiteralHost(url.hostname)) {
+    return { ok: true, url };
+  }
+
+  const resolve = options.resolve ?? resolveViaDoh;
+  let addresses: string[];
+  try {
+    addresses = await resolve(url.hostname);
+  } catch {
+    return { ok: false, reason: "That address could not be verified right now." };
+  }
+  if (addresses.length === 0) {
+    return { ok: false, reason: "That address could not be found." };
+  }
+  if (addresses.some((address) => isPrivateHostname(address))) {
+    return { ok: false, reason: "That address is not reachable from the public internet." };
+  }
   return { ok: true, url };
+}
+
+/** Re-validate a redirect target (resolved relative to `base`) before following it. */
+export function validateRedirect(
+  location: string,
+  base: URL,
+  options: UrlGuardOptions = {},
+): Promise<UrlGuardResult> {
+  let next: URL;
+  try {
+    next = new URL(location, base);
+  } catch {
+    return Promise.resolve({ ok: false, reason: "Redirect without a valid destination." });
+  }
+  return validateTargetUrl(next.toString(), options);
 }
 
 export function isPrivateHostname(hostname: string): boolean {

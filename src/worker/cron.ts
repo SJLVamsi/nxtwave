@@ -30,16 +30,22 @@ export interface ReminderRecord {
   workshopId: string;
   dueAt: string;
   message: string;
+  ambassadorNote?: string;
   sentAt: string;
   channel: "resend" | "log";
   recipientsSent?: number;
   recipientsFailed?: number;
 }
 
+/**
+ * Student-facing reminder. No registration CTA (the student already has a seat),
+ * no college/registration counts and no ambassador instructions — those live in
+ * `ambassadorNote` for the admin war room (UX review H3).
+ */
 export function buildReminderMessage(
   env: AppEnv,
-  label: string,
-  counts: { registrations: number; colleges: number },
+  _label: string,
+  counts: { registrations: number; colleges: number; seat?: string | number | null },
 ): string {
   const startsAt = new Date(env.WORKSHOP_START_ISO);
   const when = Number.isNaN(startsAt.getTime())
@@ -50,21 +56,23 @@ export function buildReminderMessage(
         month: "short",
         hour: "numeric",
         minute: "2-digit",
+        hour12: true,
         timeZone: "Asia/Kolkata",
         timeZoneName: "short",
       }).format(startsAt);
-  const social =
-    counts.registrations > 0
-      ? `${counts.registrations} students from ${counts.colleges} colleges have saved their seat.`
-      : "Seats are open now.";
-  return [
-    `NxtWave · Build Your First AI Project in 60 Minutes`,
-    `${label}: the free workshop starts ${when}.`,
-    social,
-    "Free, beginner-friendly. You leave with a deployed link and a GitHub repo.",
-    `Register: ${env.PUBLIC_BASE_URL.replace(/\/$/, "")}/`,
-    "Ambassadors: paste this message in your class groups (ask the group admin first).",
-  ].join("\n");
+  const lines = [
+    `Your NxtWave AI workshop starts ${when}.`,
+    "Bring a laptop; you'll deploy your project live.",
+  ];
+  const seat = counts.seat === undefined || counts.seat === null ? "" : String(counts.seat).trim();
+  if (seat) lines.push(`Your seat: ${seat}.`);
+  return lines.join(" ");
+}
+
+/** Ambassador paste for the war room; null while counts are unknown/zero. */
+export function buildAmbassadorNote(counts: { registrations: number; colleges: number }): string | null {
+  if (counts.registrations <= 0 || counts.colleges <= 0) return null;
+  return `${counts.registrations} students from ${counts.colleges} colleges have saved their seat. Post in your class group between 8 and 10 PM and ask the group admin first.`;
 }
 
 export async function handleScheduled(
@@ -108,6 +116,7 @@ async function maybeSendReminder(
     "SELECT COUNT(DISTINCT college_id) AS n FROM users WHERE is_simulated = 0 AND college_id IS NOT NULL",
   );
   const message = buildReminderMessage(env, spec.label, { registrations, colleges });
+  const ambassadorNote = buildAmbassadorNote({ registrations, colleges });
 
   let channel: ReminderRecord["channel"] = "log";
   let recipientsSent: number | undefined;
@@ -125,6 +134,7 @@ async function maybeSendReminder(
     workshopId: env.WORKSHOP_ID,
     dueAt,
     message,
+    ...(ambassadorNote ? { ambassadorNote } : {}),
     sentAt: new Date(now).toISOString(),
     channel,
     ...(recipientsSent !== undefined ? { recipientsSent } : {}),

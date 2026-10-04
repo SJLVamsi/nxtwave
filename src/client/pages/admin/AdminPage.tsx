@@ -132,7 +132,7 @@ function AdminDashboard() {
 
   if (session.isPending) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-[#FBFCFE] text-sm text-[#2E333B]/60">
+      <main className="flex min-h-screen items-center justify-center bg-[#FBFCFE] text-sm text-[#2E333B]">
         Checking session…
       </main>
     );
@@ -146,7 +146,7 @@ function AdminDashboard() {
           className="w-full max-w-sm rounded-md border border-[#DDE5F2] bg-white p-5"
         >
           <h1 className="text-lg font-semibold text-[#1F3A93]">Admin war room</h1>
-          <p className="mt-1 text-xs text-[#2E333B]/60">
+          <p className="mt-1 text-xs text-[#2E333B]">
             Ship60 · sign in with the admin password to review the campaign.
           </p>
           <label className="mt-4 block text-xs text-[#2E333B]/70">
@@ -184,10 +184,10 @@ function AdminDashboard() {
       <div className="mx-auto max-w-6xl space-y-3">
         <header className="flex flex-wrap items-center gap-2">
           <h1 className="text-lg font-semibold text-[#1F3A93]">Admin war room</h1>
-          <span className="text-xs text-[#2E333B]/60">Ship60 · daily 9 PM review</span>
+          <span className="text-xs text-[#2E333B]">Ship60 · daily 9 PM review</span>
           <div className="ml-auto flex items-center gap-2">
             {core.isFetching || brief.isFetching ? (
-              <span className="text-[11px] text-[#2E333B]/50">Refreshing…</span>
+              <span className="text-[11px] text-[#2E333B]">Refreshing…</span>
             ) : null}
             <button
               type="button"
@@ -254,7 +254,7 @@ function AdminDashboard() {
             />
           </>
         ) : (
-          <p className="text-sm text-[#2E333B]/60">
+          <p className="text-sm text-[#2E333B]">
             {core.isPending ? "Loading war room…" : "War room data unavailable."}
           </p>
         )}

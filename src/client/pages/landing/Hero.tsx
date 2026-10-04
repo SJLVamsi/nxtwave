@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import { BRANCHES, INTERESTS, type Branch, type Interest } from "../../../shared/constants";
 import type { IdeaCard } from "../../../shared/contracts";
 import { Button, buttonClass, Chip, EmptyState, ProjectCard, Skeleton } from "../../design";
@@ -29,6 +30,24 @@ export function Hero({
   onRetry,
 }: HeroProps) {
   const ready = branch !== null && interest !== null;
+  const cardRef = useRef<HTMLDivElement | null>(null);
+  const ideaKey = idea ? `${idea.key}:${idea.variant}` : null;
+
+  // The card renders below the fold on a 390×844 phone; bring it into view so
+  // the promise ("two taps and you'll see your project") is kept without a
+  // manual scroll. Desktop keeps its sticky column and skips this when the
+  // card is already visible.
+  useEffect(() => {
+    if (!ready || ideaKey === null) return;
+    const card = cardRef.current;
+    if (!card) return;
+    const rect = card.getBoundingClientRect();
+    const visible = rect.top >= 0 && rect.bottom <= window.innerHeight;
+    if (visible) return;
+    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    card.scrollIntoView({ behavior: reduced ? "auto" : "smooth", block: "center" });
+  }, [ready, ideaKey]);
+
   return (
     <section className="border-b border-rule">
       <div className="mx-auto max-w-6xl px-4 pt-10 pb-12 sm:px-6 lg:pt-16 lg:pb-16">
@@ -117,7 +136,7 @@ export function Hero({
             ) : null}
 
             {ready && idea ? (
-              <div className="space-y-4">
+              <div ref={cardRef} className="space-y-4">
                 <ProjectCard key={`${idea.key}:${idea.variant}`} idea={idea} />
                 <div className="flex items-center justify-between gap-4">
                   <Button variant="secondary" onClick={onAnother} disabled={loading} data-testid="idea-another">

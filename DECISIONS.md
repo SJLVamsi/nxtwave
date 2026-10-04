@@ -485,3 +485,57 @@ Subagents append under their workstream heading. This file feeds the submission'
 - **Choice:** endpoint probes retry up to 3 times (750 ms apart) before reporting; every spec calls `assertAppRendered()` after navigation, which fails with the overlay's error text when present.
 - **Why:** skips and failures stay attributed to the right workstream instead of flipping on a dev-server restart.
 - **Rejected:** sleeping before every probe (slows green runs and still races), ignoring the overlay (wrong module blamed).
+
+## Phase 4 — hardening (GSD plans 04-01..03)
+
+### P4.1 Duplicate registration requires proof of ownership (security C1)
+- **Context:** `/api/register` reissued a 60-day token to anyone who knew a victim's email or phone.
+- **Options:** (a) keep reissue, (b) email/SMS magic link, (c) rotate only when the request already proves ownership (`?t=`, Bearer, or `s60_token` cookie for the same user); otherwise 409 `DUPLICATE` with no token/cookie.
+- **Choice:** (c), plus a per-identifier KV limit (`register-dup:{sha256(email|phone)}`, 10/h).
+- **Why:** no takeover and no friction for the real owner on their own device; no email dependency on the free tier.
+- **Rejected:** (b) needs Resend/SMS and a deliverability path the demo does not have; (a) is the vulnerability.
+
+### P4.2 Live identity only from the route (security H1)
+- **Choice:** `routes/live.ts` builds a fresh `Headers` with only `Upgrade`/`Connection` plus internally set `x-s60-*`; client-supplied identity headers can never reach the DO.
+- **Why:** closes forged check-ins/quiz answers with no token.
+- **Rejected:** trusting the DO to re-validate an unsigned header — same class of bug one layer down.
+
+### P4.3 Idea-key formats
+- **Choice:** `resolveIdeaCard` accepts WS2's canonical `idea:{branch}:{interest}:{variant}`, the seed's `branch|interest[|variant]`, and JSON blobs; `og.ts` imports the same resolver instead of a second parser.
+- **Why:** real registrations and seeded rows both keep their project on `/me`, shares and OG cards.
+- **Rejected:** asking WS2 to change its key format — would break already-stored keys.
+
+### P4.4 Cron reminder copy is student-facing
+- **Choice:** the reminder says the workshop starts, to bring a laptop, and the seat when known; ambassador instructions move to an optional `ambassadorNote` in the KV record. No "0 colleges".
+- **Rejected:** keeping one message for both audiences.
+
+### P4.5 CSV formula injection neutralised (security M5)
+- **Choice:** prefix `'` when the cell starts with `=`, `+`, `-`, `@`, tab or CR, then quote; add `nosniff` to the export response.
+- **Rejected:** `.xlsx` export — a new dependency for a demo export.
+
+### P4.6 Brief prompt injection (security M6)
+- **Choice:** facts are wrapped in the same delimited untrusted block as the evaluator rubric, marker strings stripped, system instruction never to follow instructions inside; rule-based lines unchanged.
+- **Rejected:** numeric-only AI input — the narrative paragraph loses its context.
+
+### P4.7 DNS-aware SSRF guard (security M2)
+- **Choice:** injectable resolver (default Cloudflare DoH JSON, 1.5 s timeout, 60 s isolate cache, fail-closed) checks A/AAAA answers for private/reserved ranges before every fetch and redirect hop; tests inject resolvers and do no network I/O.
+- **Rejected:** host allowlist — would block legitimate student deploys on arbitrary hosts.
+
+### P4.8 Certificate PII and simulated mark
+- **Choice:** public cert page/JSON use `publicName` (first name + last initial); `isSimulated` comes from `submissions.is_simulated` and renders a visible label.
+- **Rejected:** full name (PRD §7 caps public exposure).
+
+### P4.9 Admin simulated default (ADM-03)
+- **Choice:** `includeSimulated` defaults to true only when zero real student rows exist and simulated rows do; explicit query params always win.
+- **Why:** the war room opens on the seeded demo without a manual toggle, and never silently mixes fake rows into a real campaign.
+
+### P4.10 Static-asset headers and caching
+- **Choice:** `public/_headers` applies the same CSP/nosniff/XFO/referrer/permissions policy to SPA + assets and `immutable` caching for `/assets/*`.
+- **Rejected:** routing all HTML through the Worker — extra invocation per page view for headers `_headers` already provides.
+
+### P4.11 UX/perf fixes
+- Project card auto-scrolls into view only when off-screen (reduced-motion aware); field errors clear on edit; duplicate panel copy no longer promises an email; story image tries `navigator.share` → anchor → new tab with a long-press hint; Archivo hero font preloaded (CLS 0.0247 → ~0.0004); production sourcemaps off; admin labels to full graphite for AA; `/plan` uppercase eyebrows removed; `/build` opens with three curated asked→AI→rejected examples; `/cert` shows the simulated badge.
+
+### P4.12 e2e admin limiter isolation
+- **Choice:** the admin spec sets a random `cf-connecting-ip` per run; the persistent local KV otherwise exhausts the 10/h login limiter after a few runs.
+- **Rejected:** raising the login limit — weakens a real control for test convenience.

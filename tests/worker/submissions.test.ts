@@ -6,7 +6,8 @@ import {
   SubmissionResponseSchema,
   type Evaluation,
 } from "../../src/shared/contracts";
-import { hashToken } from "../../src/worker/lib/auth";
+import { hashToken, publicName } from "../../src/worker/lib/auth";
+import { validateTargetUrl } from "../../src/worker/lib/eval/ssrf";
 import submissionsApp, { certRoutes } from "../../src/worker/routes/submissions";
 
 // Tests hit the WS7 apps directly: index.ts mounts WS1's `/api` catch-all before
@@ -30,6 +31,7 @@ const VALID_EVALUATION: Evaluation = {
 interface SeededUser {
   id: string;
   token: string;
+  name: string;
 }
 
 let userCounter = 0;
@@ -38,6 +40,7 @@ async function seedUser(options: { checkedIn?: boolean; ideaKey?: string | null 
   userCounter += 1;
   const id = `u_test_${userCounter}_${crypto.randomUUID().replaceAll("-", "")}`;
   const token = `token_${crypto.randomUUID().replaceAll("-", "")}`;
+  const name = `Test Student ${userCounter}`;
   const tokenHash = await hashToken(token);
   await env.DB.prepare(
     `INSERT INTO users (id, name, email, phone, branch, grad_year, ref_code, token_hash, seat_no, consent_at, created_at, idea_key)
@@ -45,7 +48,7 @@ async function seedUser(options: { checkedIn?: boolean; ideaKey?: string | null 
   )
     .bind(
       id,
-      `Test Student ${userCounter}`,
+      name,
       `student${userCounter}@example.com`,
       `+9190000${String(10000 + userCounter).slice(-5)}`,
       `TEST${userCounter}${crypto.randomUUID().slice(0, 3).toUpperCase()}`,
@@ -63,7 +66,7 @@ async function seedUser(options: { checkedIn?: boolean; ideaKey?: string | null 
       .bind(id, env.WORKSHOP_ID, new Date().toISOString())
       .run();
   }
-  return { id, token };
+  return { id, token, name };
 }
 
 function submissionPayload(overrides: Record<string, string> = {}) {
@@ -109,10 +112,30 @@ function githubReadmeResponse(readme: string) {
   });
 }
 
+function dohResponse(type: string | null) {
+  const isAaaa = type === "AAAA";
+  return new Response(
+    JSON.stringify({
+      Status: 0,
+      Answer: [
+        {
+          name: "student-project.example.com",
+          type: isAaaa ? 28 : 1,
+          data: isAaaa ? "2606:2800:220:1:248:1893:25c8:1946" : "93.184.216.34",
+        },
+      ],
+    }),
+    { status: 200, headers: { "content-type": "application/dns-json" } },
+  );
+}
+
 function mockOutbound(options: { live?: Response | Error; repo?: boolean; readme?: string }) {
   const liveKey = new URL(LIVE_URL).toString();
   return vi.spyOn(globalThis, "fetch").mockImplementation(async (input) => {
     const url = typeof input === "string" ? input : input instanceof URL ? input.toString() : input.url;
+    if (url.startsWith("https://cloudflare-dns.com/dns-query")) {
+      return dohResponse(new URL(url).searchParams.get("type"));
+    }
     if (url === liveKey) {
       if (options.live instanceof Error) throw options.live;
       return options.live ?? htmlPage("Cricket Commentator");
@@ -269,6 +292,57 @@ describe("POST /api/submissions", () => {
   });
 });
 
+describe("DNS-aware SSRF guard", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("rejects a hostname that resolves to a private IP, with no network I/O", async () => {
+    const fetchSpy = vi.spyOn(globalThis, "fetch");
+    const resolve = vi.fn(async () => ["127.0.0.1"]);
+    const result = await validateTargetUrl("http://localtest.me", { resolve });
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.reason).toMatch(/public internet/i);
+    expect(resolve).toHaveBeenCalledWith("localtest.me");
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
+  it("allows a hostname that resolves to a public IP", async () => {
+    const result = await validateTargetUrl("http://example.com", {
+      resolve: async () => ["93.184.216.34"],
+    });
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.url.toString()).toBe("http://example.com/");
+  });
+
+  it("rejects when any A/AAAA answer is private, and fails closed on lookup errors", async () => {
+    const mixed = await validateTargetUrl("https://example.com", {
+      resolve: async () => ["93.184.216.34", "10.0.0.5"],
+    });
+    expect(mixed.ok).toBe(false);
+
+    const failed = await validateTargetUrl("https://example.com", {
+      resolve: async () => {
+        throw new Error("DoH down");
+      },
+    });
+    expect(failed.ok).toBe(false);
+
+    const empty = await validateTargetUrl("https://example.com", { resolve: async () => [] });
+    expect(empty.ok).toBe(false);
+  });
+
+  it("skips resolution for literal IPs and hosts already rejected", async () => {
+    const fetchSpy = vi.spyOn(globalThis, "fetch");
+    const resolve = vi.fn(async () => ["93.184.216.34"]);
+    expect((await validateTargetUrl("http://93.184.216.34", { resolve })).ok).toBe(true);
+    expect((await validateTargetUrl("http://127.0.0.1", { resolve })).ok).toBe(false);
+    expect((await validateTargetUrl("http://localhost", { resolve })).ok).toBe(false);
+    expect(resolve).not.toHaveBeenCalled();
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
+});
+
 describe("GET /api/submissions/:id", () => {
   afterEach(() => {
     vi.restoreAllMocks();
@@ -320,26 +394,49 @@ describe("certificates", () => {
     vi.restoreAllMocks();
   });
 
-  it("serves the public HTML page and JSON for a valid certificate id", async () => {
-    const { submission } = await createCertificate();
+  it("serves the public HTML page and JSON with first name + last initial only", async () => {
+    const { user, submission } = await createCertificate();
     expect(submission.certId).toBeTruthy();
+    const masked = publicName(user.name);
 
     const page = await certRequest(`/cert/${submission.certId}`);
     expect(page.status).toBe(200);
     expect(page.headers.get("content-type")).toContain("text/html");
     const htmlBody = await page.text();
     expect(htmlBody).toContain("Certificate of completion");
-    expect(htmlBody).toContain("Test Student");
+    expect(htmlBody).toContain(masked);
     expect(htmlBody).toContain(env.WORKSHOP_ID);
     expect(htmlBody).toContain("Gully Cricket Commentator");
+    // The full name (and surname) never appears on the public page.
+    expect(htmlBody).not.toContain(user.name);
+    expect(htmlBody).not.toContain("Student");
 
     const data = await appRequest(`/cert/${submission.certId}`);
     expect(data.status).toBe(200);
     const cert = CertificateResponseSchema.parse(await data.json());
     expect(cert.valid).toBe(true);
-    expect(cert.name).toContain("Test Student");
+    expect(cert.name).toBe(masked);
+    expect(cert.name).not.toContain("Student");
     expect(cert.projectTitle).toBe("Gully Cricket Commentator");
     expect(cert.workshopId).toBe(env.WORKSHOP_ID);
+  });
+
+  it("labels simulated certificates with a visible Simulated data line", async () => {
+    const { user, submission } = await createCertificate();
+    await env.DB.prepare("UPDATE submissions SET is_simulated = 1 WHERE cert_id = ?")
+      .bind(submission.certId)
+      .run();
+
+    const page = await certRequest(`/cert/${submission.certId}`);
+    expect(page.status).toBe(200);
+    const htmlBody = await page.text();
+    expect(htmlBody).toContain("Simulated data");
+    expect(htmlBody).toContain(publicName(user.name));
+    expect(htmlBody).not.toContain(user.name);
+
+    const data = await appRequest(`/cert/${submission.certId}`);
+    const cert = CertificateResponseSchema.parse(await data.json());
+    expect(cert.isSimulated).toBe(true);
   });
 
   it("404s for unknown certificate ids", async () => {

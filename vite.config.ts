@@ -19,7 +19,9 @@ export default defineConfig({
     ),
   },
   build: {
-    sourcemap: true,
+    // Public source maps expose the full unminified source and add ~3.9 MB to
+    // the deployed asset set; keep them local-only unless explicitly requested.
+    sourcemap: process.env.SHIP60_SOURCEMAPS === "1",
   },
   optimizeDeps: {
     // Pre-bundle the admin chart so the dev server never re-optimizes mid-e2e

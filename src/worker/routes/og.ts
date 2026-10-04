@@ -8,10 +8,10 @@ import type { Context } from "hono";
 import { ImageResponse } from "workers-og";
 import { OG_CACHE_SECONDS } from "../../shared/constants";
 import { ERROR_CODES } from "../../shared/errors";
-import { IDEA_BANK } from "../../shared/idea-bank";
 import type { AppContext, AppEnv } from "../env";
 import { first } from "../lib/db";
 import { apiError } from "../lib/http";
+import { resolveIdeaCard } from "../lib/idea-card";
 import { ogFontData } from "./og-font";
 
 type OgVariant = "landscape" | "story";
@@ -68,22 +68,13 @@ function collegeName(short: string | null, other: string | null): string {
   return clip(value, 32);
 }
 
-/** Resolve a stored `idea_key` to a display title via the bank or stored JSON. */
-function projectTitle(ideaKey: string | null): string {
-  if (!ideaKey) return "My first AI project";
-  const trimmed = ideaKey.trim();
-  if (trimmed.startsWith("{")) {
-    try {
-      const parsed = JSON.parse(trimmed) as { title?: unknown };
-      if (typeof parsed.title === "string" && parsed.title.trim()) return clip(parsed.title, 90);
-    } catch {
-      /* fall through to key parsing */
-    }
-  }
-  const [branch, interest] = trimmed.split(/[|:]/);
-  const idea = IDEA_BANK[`${branch}|${interest}`];
-  if (idea) return clip(idea.title, 90);
-  return "My first AI project";
+/**
+ * Resolve a stored `idea_key` (bank key, WS2 `idea:{branch}:{interest}:{variant}`
+ * key, or JSON blob) to a display title. Parsing lives in `lib/idea-card.ts`.
+ */
+export function projectTitle(ideaKey: string | null): string {
+  const card = resolveIdeaCard(ideaKey);
+  return card ? clip(card.title, 90) : "My first AI project";
 }
 
 const dateLines = new Map<string, string>();

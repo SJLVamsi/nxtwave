@@ -122,9 +122,13 @@ class WsClient {
 
 const clients: WsClient[] = [];
 
-async function openWs(query: string, cookie?: string): Promise<WsClient> {
+async function openWs(
+  query: string,
+  cookie?: string,
+  headers: Record<string, string> = {},
+): Promise<WsClient> {
   const res = await fetchLive(`/api/live/${workshopId}/ws${query}`, {
-    headers: { Upgrade: "websocket", ...(cookie ? { Cookie: cookie } : {}) },
+    headers: { Upgrade: "websocket", ...(cookie ? { Cookie: cookie } : {}), ...headers },
   });
   expect(res.status).toBe(101);
   if (!res.webSocket) throw new Error("Upgrade response had no webSocket");
@@ -173,6 +177,26 @@ describe("live routes", () => {
     client.send({ type: "join", role: "host" });
     const error = await client.waitFor("error");
     expect(error.code).toBe("FORBIDDEN");
+  });
+
+  it("ignores forged x-s60-* identity headers without a token", async () => {
+    const victim = await createUser("Victim Header");
+    const client = await openWs("", undefined, {
+      "x-s60-user-id": victim.id,
+      "x-s60-user-name": victim.name,
+    });
+    client.send({ type: "join" });
+    client.send({ type: "checkin" });
+    const error = await client.waitForWhere(
+      (msg) => msg.type === "error" && msg.code === "UNAUTHORIZED",
+      "forged check-in rejection",
+    );
+    expect(error.type).toBe("error");
+
+    const checkin = await env.DB.prepare("SELECT user_id FROM checkins WHERE user_id = ?")
+      .bind(victim.id)
+      .first();
+    expect(checkin).toBeNull();
   });
 });
 
