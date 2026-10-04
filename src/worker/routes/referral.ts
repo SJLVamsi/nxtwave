@@ -14,7 +14,7 @@ import type { AppContext } from "../env";
 import { buildSetCookie, getCookie, hashIp, ipHashSalt, publicName } from "../lib/auth";
 import { first, type UserRow } from "../lib/db";
 import { recordEvent } from "../lib/events";
-import { escapeHtml, safeJsonForScript } from "../lib/http";
+import { escapeHtml, resolvePublicBase, safeJsonForScript } from "../lib/http";
 import { resolveIdeaCard } from "../lib/idea-card";
 import { clientIp, rateLimit } from "../lib/ratelimit";
 
@@ -61,7 +61,7 @@ app.get("/r/:code", async (c) => {
     });
   }
 
-  const base = (c.env.PUBLIC_BASE_URL || new URL(c.req.url).origin).replace(/\/+$/, "");
+  const base = resolvePublicBase(c.env, c.req.raw);
   const target = `/?ref=${encodeURIComponent(attribution)}${variant ? `&v=${encodeURIComponent(variant)}` : ""}`;
   const display = publicName(user.name);
   const idea = resolveIdeaCard(user.idea_key);

@@ -22,14 +22,14 @@
     {
       "binding": "DB",
       "database_name": "ship60-db",
-      "database_id": "00000000-0000-0000-0000-000000000000",
+      "database_id": "0b6fb957-1607-4a95-ac18-32c87f588503",
       "migrations_dir": "migrations"
     }
   ],
   "kv_namespaces": [
     {
       "binding": "CACHE",
-      "id": "00000000000000000000000000000000"
+      "id": "f95cb9a970144f1d9c693ffbe8e20065"
     }
   ],
   "ai": {
@@ -56,8 +56,8 @@
     "WORKSHOP_ID": "ship60-2026-10-11",
     "WORKSHOP_START_ISO": "2026-10-11T13:30:00.000Z",
     "TARGET_REGISTRATIONS": "500",
-    "PUBLIC_BASE_URL": "http://localhost:5173",
-    "TURNSTILE_SITE_KEY": "1x00000000000000000000AA",
-    "ENVIRONMENT": "development"
+    "PUBLIC_BASE_URL": "https://ship60.ship60vamsi.workers.dev",
+    "TURNSTILE_SITE_KEY": "0x4AAAAAAFNSCH2aXN7YWlYp",
+    "ENVIRONMENT": "production"
   }
 }

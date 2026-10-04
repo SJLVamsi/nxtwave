@@ -10,7 +10,7 @@ import { OG_CACHE_SECONDS } from "../../shared/constants";
 import { ERROR_CODES } from "../../shared/errors";
 import type { AppContext, AppEnv } from "../env";
 import { first } from "../lib/db";
-import { apiError } from "../lib/http";
+import { apiError, resolvePublicBase } from "../lib/http";
 import { resolveIdeaCard } from "../lib/idea-card";
 import { ogFontData } from "./og-font";
 
@@ -106,9 +106,8 @@ function workshopDateLine(iso: string): string {
 }
 
 function baseHost(env: AppEnv, request: Request): string {
-  const configured = env.PUBLIC_BASE_URL;
   try {
-    const host = new URL(configured && configured.length > 0 ? configured : request.url).host;
+    const host = new URL(resolvePublicBase(env, request)).host;
     if (host) return host;
   } catch {
     /* fall through */

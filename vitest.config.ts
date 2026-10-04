@@ -15,7 +15,8 @@ export default defineConfig({
             ADMIN_PASSWORD: "test-admin-password",
             SESSION_SECRET: "test-session-secret",
             TURNSTILE_SECRET_KEY: "",
-            PUBLIC_BASE_URL: "http://localhost:5173",
+            ENVIRONMENT: "development",
+            PUBLIC_BASE_URL: "https://ship60.test",
           },
         },
       };

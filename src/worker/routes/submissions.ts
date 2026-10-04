@@ -22,7 +22,7 @@ import { getAuthedUser, publicName } from "../lib/auth";
 import { count, first, nowIso, run, type SubmissionRow } from "../lib/db";
 import { evaluateSubmission, fetchRepoContext, probeLivePage, validateTargetUrl } from "../lib/eval";
 import { recordEvent } from "../lib/events";
-import { apiError, html, json, parseJsonBody } from "../lib/http";
+import { apiError, html, json, parseJsonBody, resolvePublicBase } from "../lib/http";
 import { newId } from "../lib/ids";
 import { rateLimit } from "../lib/ratelimit";
 
@@ -366,8 +366,9 @@ certRoutes.get("/cert/:id", async (c) => {
     return apiError(ERROR_CODES.NOT_FOUND, "Certificate images are not enabled yet.");
   }
   const cert = await loadCertificate(c.env.DB, c.env, id);
-  if (!cert) return html(certNotFoundPage(c.env.PUBLIC_BASE_URL), { status: 404 });
-  return html(certPage(cert, c.env.PUBLIC_BASE_URL), {
+  const base = resolvePublicBase(c.env, c.req.raw);
+  if (!cert) return html(certNotFoundPage(base), { status: 404 });
+  return html(certPage(cert, base), {
     headers: { "cache-control": "public, max-age=300" },
   });
 });

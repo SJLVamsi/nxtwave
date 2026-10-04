@@ -20,6 +20,7 @@ const ensureDevVars = [
   `let a="";`,
   `if(!/^ADMIN_PASSWORD=/m.test(s))a+="ADMIN_PASSWORD=test-admin-password\\n";`,
   `if(!/^SESSION_SECRET=/m.test(s))a+="SESSION_SECRET=test-session-secret\\n";`,
+  `if(!/^ENVIRONMENT=/m.test(s))a+="ENVIRONMENT=development\\n";`,
   `if(a)fs.appendFileSync(".dev.vars",a)'`,
 ].join("");
 

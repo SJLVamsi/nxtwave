@@ -102,6 +102,31 @@ export function html(body: string, init?: ResponseInit): Response {
   return new Response(body, { ...init, headers });
 }
 
+/**
+ * Public base URL for share/referral/OG links. Uses PUBLIC_BASE_URL when it is
+ * configured for a real host; a localhost value never leaks into a deployed
+ * request (falls back to the request origin). Security/judge review fix.
+ */
+export function resolvePublicBase(
+  env: { PUBLIC_BASE_URL?: string },
+  request: Request,
+): string {
+  const origin = new URL(request.url).origin;
+  const configured = (env.PUBLIC_BASE_URL ?? "").replace(/\/+$/, "");
+  if (!configured) return origin;
+  try {
+    const configuredHost = new URL(configured).hostname;
+    const requestHost = new URL(origin).hostname;
+    const isLocal = (host: string) => host === "localhost" || host === "127.0.0.1";
+    // Local requests always use their own origin; a localhost config never
+    // leaks into a deployed request.
+    if (isLocal(requestHost) || isLocal(configuredHost)) return origin;
+    return configured;
+  } catch {
+    return origin;
+  }
+}
+
 /** Escape untrusted text before embedding it in server-rendered HTML. */
 export function escapeHtml(value: string): string {
   return value

@@ -44,7 +44,7 @@ import {
 import { cachedJson } from "../lib/cache";
 import { all, count, first, nowIso, run, toBool, type CollegeRow, type UserRow } from "../lib/db";
 import { recordEvent } from "../lib/events";
-import { apiError, json, parseJsonBody } from "../lib/http";
+import { apiError, json, parseJsonBody, resolvePublicBase } from "../lib/http";
 import { resolveIdeaCard } from "../lib/idea-card";
 import { newId, newToken, refCodeFromName, withSeatRetry } from "../lib/ids";
 import { clientIp, rateLimit } from "../lib/ratelimit";
@@ -61,8 +61,7 @@ const INSERT_USER = `INSERT INTO users (
 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'student', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?)`;
 
 function baseUrl(env: AppEnv, request: Request): string {
-  const configured = env.PUBLIC_BASE_URL || new URL(request.url).origin;
-  return configured.replace(/\/+$/, "");
+  return resolvePublicBase(env, request);
 }
 
 function launchpadUrl(env: AppEnv, request: Request, token: string): string {
@@ -221,7 +220,16 @@ app.post("/register", async (c) => {
   if (!limited.ok) return apiError(ERROR_CODES.RATE_LIMITED);
 
   const secret = c.env.TURNSTILE_SECRET_KEY;
-  if (secret && !(await verifyTurnstile(secret, body.turnstileToken, ip))) {
+  if (!secret) {
+    // Fail closed outside local dev: a deployed Worker without the secret must
+    // not silently skip human verification (security review M1).
+    if (c.env.ENVIRONMENT !== "development") {
+      return apiError(
+        ERROR_CODES.INTERNAL,
+        "Registration is temporarily unavailable (verification is not configured).",
+      );
+    }
+  } else if (!(await verifyTurnstile(secret, body.turnstileToken, ip))) {
     return apiError(ERROR_CODES.TURNSTILE_FAILED);
   }
 
