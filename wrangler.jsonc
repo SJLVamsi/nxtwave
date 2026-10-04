@@ -1,0 +1,62 @@
+/**
+ * Ship60 — Cloudflare Worker + Static Assets.
+ * Placeholder ids for D1/KV are replaced in Phase 4 after `wrangler d1 create` /
+ * `wrangler kv namespace create`. See DECISIONS.md and README.md.
+ */
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "ship60",
+  "main": "src/worker/index.ts",
+  "compatibility_date": "2026-10-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "assets": {
+    "not_found_handling": "single-page-application",
+    "run_worker_first": ["/api/*", "/r/*", "/og/*", "/cert/*"]
+  },
+  "observability": {
+    "enabled": true
+  },
+  "upload_source_maps": true,
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "ship60-db",
+      "database_id": "00000000-0000-0000-0000-000000000000",
+      "migrations_dir": "migrations"
+    }
+  ],
+  "kv_namespaces": [
+    {
+      "binding": "CACHE",
+      "id": "00000000000000000000000000000000"
+    }
+  ],
+  "ai": {
+    "binding": "AI"
+  },
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "LIVE_ROOM",
+        "class_name": "LiveRoom"
+      }
+    ]
+  },
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_sqlite_classes": ["LiveRoom"]
+    }
+  ],
+  "triggers": {
+    "crons": ["*/15 * * * *"]
+  },
+  "vars": {
+    "WORKSHOP_ID": "ship60-2026-10-11",
+    "WORKSHOP_START_ISO": "2026-10-11T13:30:00.000Z",
+    "TARGET_REGISTRATIONS": "500",
+    "PUBLIC_BASE_URL": "http://localhost:5173",
+    "TURNSTILE_SITE_KEY": "1x00000000000000000000AA",
+    "ENVIRONMENT": "development"
+  }
+}
