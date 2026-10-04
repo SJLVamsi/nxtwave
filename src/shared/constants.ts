@@ -79,6 +79,29 @@ export const EVENT_TYPES = [
 ] as const;
 export type EventType = (typeof EVENT_TYPES)[number];
 
+/**
+ * Event types a public client may emit. Server-derived events (`registered`,
+ * `checkin`, `submitted`, `ai_call`) are rejected on POST /api/events so public
+ * traffic cannot fabricate admin metrics (security review M3).
+ */
+export const CLIENT_EVENT_TYPES = [
+  "page_view",
+  "idea_generated",
+  "form_started",
+  "share_clicked",
+  "referral_landing",
+] as const;
+export type ClientEventType = (typeof CLIENT_EVENT_TYPES)[number];
+
+export const SERVER_EVENT_TYPES = [
+  "registered",
+  "checkin",
+  "submitted",
+  "ai_call",
+] as const satisfies readonly EventType[];
+
+export const MAX_EVENT_PROPS_BYTES = 1024;
+
 export const FUNNEL_STEPS = [
   { key: "page_view", label: "Landing views" },
   { key: "idea_generated", label: "Idea generated" },

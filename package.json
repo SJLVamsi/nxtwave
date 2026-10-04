@@ -22,6 +22,8 @@
     "seed:local": "tsx scripts/seed.ts --local",
     "seed:remote": "tsx scripts/seed.ts --remote",
     "seed:clear": "tsx scripts/seed.ts --clear",
+    "demo:reset": "npm run seed:clear && npm run seed:local",
+    "postbuild": "node -e \"try{require('node:fs').rmSync('dist/ship60/.dev.vars',{force:true})}catch{}\"",
     "smoke": "tsx scripts/smoke.ts",
     "warm:ideas": "tsx scripts/warm-ideas.ts"
   },

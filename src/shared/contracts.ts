@@ -5,9 +5,11 @@
 import { z } from "zod";
 import {
   BRANCHES,
+  CLIENT_EVENT_TYPES,
   EVENT_TYPES,
   GRAD_YEARS,
   INTERESTS,
+  MAX_EVENT_PROPS_BYTES,
   WHATSAPP_VARIANTS,
 } from "./constants";
 
@@ -189,9 +191,15 @@ export type CollegeLeaderboardRow = z.infer<typeof CollegeLeaderboardRowSchema>;
 /* ---------------------------------- events --------------------------------- */
 
 export const EventRequestSchema = z.object({
-  type: EventTypeSchema,
+  type: z.enum(CLIENT_EVENT_TYPES),
   anonId: z.string().max(64).optional(),
-  props: z.record(z.string(), z.unknown()).optional(),
+  props: z
+    .record(z.string(), z.unknown())
+    .refine(
+      (props) => JSON.stringify(props).length <= MAX_EVENT_PROPS_BYTES,
+      `props must be ${MAX_EVENT_PROPS_BYTES} bytes or fewer`,
+    )
+    .optional(),
   ...UTM_SCHEMA,
 });
 export type EventRequest = z.infer<typeof EventRequestSchema>;
@@ -224,6 +232,7 @@ export const AmbassadorKitResponseSchema = z.object({
   }),
   postingWindow: z.string(),
   checklist: z.array(z.string()),
+  isSimulated: z.boolean().optional(),
 });
 export type AmbassadorKitResponse = z.infer<typeof AmbassadorKitResponseSchema>;
 
@@ -464,6 +473,7 @@ export const CertificateResponseSchema = z.object({
   issuedAt: z.string(),
   workshopId: z.string(),
   valid: z.boolean(),
+  isSimulated: z.boolean().optional(),
 });
 export type CertificateResponse = z.infer<typeof CertificateResponseSchema>;
 
