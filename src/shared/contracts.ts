@@ -164,6 +164,7 @@ export const StudentLeaderboardRowSchema = z.object({
   collegeShort: z.string(),
   qualified: z.number(),
   total: z.number(),
+  isSimulated: z.boolean().optional(),
 });
 export const CollegeLeaderboardRowSchema = z.object({
   rank: z.number(),
@@ -173,6 +174,7 @@ export const CollegeLeaderboardRowSchema = z.object({
   registrations: z.number(),
   qualified: z.number(),
   ambassadors: z.number(),
+  isSimulated: z.boolean().optional(),
 });
 export const LeaderboardResponseSchema = z.object({
   type: z.enum(["students", "colleges"]),
@@ -203,6 +205,9 @@ export const CollegeOptionSchema = z.object({
   city: z.string().nullable(),
 });
 export type CollegeOption = z.infer<typeof CollegeOptionSchema>;
+
+export const CollegeListResponseSchema = z.array(CollegeOptionSchema);
+export type CollegeListResponse = z.infer<typeof CollegeListResponseSchema>;
 
 /* -------------------------------- ambassador ------------------------------- */
 

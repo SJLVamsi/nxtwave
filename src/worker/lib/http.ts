@@ -62,6 +62,8 @@ export async function parseJsonBody<T>(
 }
 
 export function securityHeaders(response: Response): Response {
+  // WebSocket upgrades (101) cannot be reconstructed as a new Response.
+  if (response.status === 101 || response.webSocket) return response;
   const headers = new Headers(response.headers);
   headers.set("x-content-type-options", "nosniff");
   headers.set("referrer-policy", "strict-origin-when-cross-origin");
@@ -98,4 +100,19 @@ export function html(body: string, init?: ResponseInit): Response {
   const headers = new Headers(init?.headers);
   headers.set("content-type", "text/html; charset=utf-8");
   return new Response(body, { ...init, headers });
+}
+
+/** Escape untrusted text before embedding it in server-rendered HTML. */
+export function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+/** JSON.stringify safe to inline inside a <script> tag. */
+export function safeJsonForScript(value: unknown): string {
+  return JSON.stringify(value).replace(/</g, "\\u003c").replace(/\u2028|\u2029/g, "");
 }

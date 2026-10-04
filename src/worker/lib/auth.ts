@@ -20,6 +20,14 @@ export async function hashIp(ip: string, salt: string): Promise<string> {
   return sha256Hex(`ip:${salt}:${ip}`);
 }
 
+/**
+ * Salt for hashed IPs. Prefers real secrets; the constant fallback only ever
+ * applies in local dev where no secret is configured (PRD §7 pseudonymised IPs).
+ */
+export function ipHashSalt(env: AppEnv): string {
+  return env.SESSION_SECRET || env.ADMIN_PASSWORD || "ship60-local-ip-salt";
+}
+
 export function getCookie(request: Request, name: string): string | null {
   const header = request.headers.get("cookie");
   if (!header) return null;
@@ -63,6 +71,19 @@ export async function getAuthedUser(request: Request, env: AppEnv): Promise<User
   const bearer = header?.toLowerCase().startsWith("bearer ") ? header.slice(7).trim() : null;
   const token = bearer ?? getCookie(request, COOKIE_TOKEN);
   return getUserByToken(env.DB, token);
+}
+
+/** Token from `?t=`, `Authorization: Bearer`, or the s60_token cookie (M3). */
+export function tokenFromRequest(request: Request): string | null {
+  const queryToken = new URL(request.url).searchParams.get("t");
+  if (queryToken) return queryToken;
+  const header = request.headers.get("authorization");
+  if (header?.toLowerCase().startsWith("bearer ")) return header.slice(7).trim();
+  return getCookie(request, COOKIE_TOKEN);
+}
+
+export async function getUserFromRequest(request: Request, env: AppEnv): Promise<UserRow | null> {
+  return getUserByToken(env.DB, tokenFromRequest(request));
 }
 
 /* ------------------------------ admin session ------------------------------ */

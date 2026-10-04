@@ -1,9 +1,10 @@
 @import "tailwindcss";
+@import "./design/tokens.css";
 
 /*
- * Design tokens (PRD §5) are owned by WS3 and land in src/client/design/.
- * This file only wires Tailwind and neutral fallbacks so every workstream can
- * build against the same base before WS3 reports ready.
+ * Design tokens (PRD §5) live in src/client/design/tokens.css (WS3).
+ * This file wires Tailwind and keeps neutral fallbacks for any surface that
+ * has not adopted the token utilities yet.
  */
 
 :root {
