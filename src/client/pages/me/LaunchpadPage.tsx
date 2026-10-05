@@ -1,11 +1,13 @@
 /**
- * WS4 — My Launchpad (PRD §4.2 M3): ticket, share buttons, tiers, ranks,
- * referrals, calendar. Mobile-first; works in WhatsApp/Instagram in-app browsers.
+ * WS4 — My Launchpad (PRD §4.2 M3): ticket first, then share actions, reward
+ * tiers as a hairline list, ranks as mono stats, referrals as rows, calendar.
+ * Flight Deck restyle (DESIGN.md §8); fetch and share behavior unchanged.
  */
 import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router";
 import { REWARD_TIERS, WHATSAPP_VARIANTS } from "../../../shared/constants";
 import type { MeResponse } from "../../../shared/contracts";
+import { SimulatedBadge, Stat, Ticket, buttonClass } from "../../design";
 import { trackEvent } from "./events";
 import {
   WHATSAPP_VARIANT_LABELS,
@@ -16,16 +18,15 @@ import {
   type ShareContext,
 } from "./share";
 import { saveStoryImage } from "./story";
-import { cx, formatIst } from "./format";
+import { formatIst } from "./format";
 import {
   CopyButton,
-  Countdown,
+  CountdownLabel,
   ErrorState,
   LoadingState,
   PageShell,
   Panel,
   SectionTitle,
-  SimulatedBadge,
   StatusBadge,
 } from "./ui";
 
@@ -85,10 +86,7 @@ export default function LaunchpadPage() {
               : "We could not load your page just now. Check your connection and try again."
           }
           action={
-            <Link
-              to="/"
-              className="inline-flex min-h-11 items-center rounded-md bg-[#1F3A93] px-4 text-sm font-bold text-white"
-            >
+            <Link to="/" className={buttonClass({ variant: "primary" })}>
               Go to registration
             </Link>
           }
@@ -112,6 +110,7 @@ function Launchpad({ data }: { data: MeResponse }) {
   const total = stats.totalReferrals;
   const nextAt = stats.nextTierAt;
   const progress = nextAt && nextAt > 0 ? Math.min(100, Math.round((total / nextAt) * 100)) : 100;
+  const collegeName = user.college?.shortName ?? user.collegeOther;
 
   const calendarHref =
     data.calendar.googleUrl ||
@@ -131,53 +130,33 @@ function Launchpad({ data }: { data: MeResponse }) {
       title="My Launchpad"
       subtitle="Your seat, your link, and everyone who joins through you."
     >
-      <Panel className="border-l-4 border-l-[#D7263D]">
-        <div className="flex items-start justify-between gap-2">
-          <div>
-            <p className="text-xs font-bold tracking-wide text-[#1F3A93]">
-              {data.checkedIn ? "Checked in" : "Your seat is saved"}
-            </p>
-            <p className="mt-1 text-3xl font-bold text-[#1F3A93]">Seat #{user.seatNo}</p>
-            <p className="mt-1 text-sm">
-              {user.firstName}
-              {user.college?.shortName
-                ? ` · ${user.college.shortName}`
-                : user.collegeOther
-                  ? ` · ${user.collegeOther}`
-                  : ""}
-            </p>
+      <Ticket
+        seatNo={user.seatNo}
+        name={`${user.firstName}${collegeName ? ` · ${collegeName}` : ""}`}
+        projectTitle={idea?.title ?? "Your first AI project"}
+        detail={`${data.checkedIn ? "Checked in" : "Seat saved"} · ${formatIst(data.workshop.startIso)} IST`}
+        footer={
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <CountdownLabel targetIso={data.workshop.startIso} />
+            {user.isSimulated ? <SimulatedBadge /> : null}
           </div>
-          {user.isSimulated ? <SimulatedBadge /> : null}
-        </div>
-        <div className="mt-3 rounded-md bg-[#FFE45C] px-3 py-2">
-          <p className="text-xs font-bold text-[#2E333B]">Your project</p>
-          <p className="text-lg font-bold leading-snug text-[#1F3A93]">
-            {idea?.title ?? "Your first AI project"}
-          </p>
-        </div>
-        <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-sm">
-          <span>{formatIst(data.workshop.startIso)} IST</span>
-          <Countdown targetIso={data.workshop.startIso} />
-        </div>
-      </Panel>
+        }
+      />
 
       <Panel className="mt-4">
         <SectionTitle>Your referral link</SectionTitle>
-        <div className="flex items-stretch gap-2">
-          <input
-            readOnly
-            aria-label="Your referral link"
-            value={data.referralLink}
-            className="min-h-11 w-full min-w-0 rounded-md border border-[#DDE5F2] bg-[#FBFCFE] px-3 text-sm"
-          />
-          <CopyButton
-            text={data.referralLink}
-            label="Copy my link"
-            className="shrink-0"
-            onCopied={() => shareClicked("copy")}
-          />
-        </div>
-        <div className="mt-3 grid grid-cols-1 gap-2">
+        <p className="break-all rounded-control border border-hairline bg-surface-2 px-3 py-2.5 font-mono text-label leading-relaxed text-ink">
+          {data.referralLink}
+        </p>
+        <CopyButton
+          text={data.referralLink}
+          label="Copy my link"
+          variant="primary"
+          className="mt-3 w-full"
+          testId="copy-link"
+          onCopied={() => shareClicked("copy")}
+        />
+        <div className="mt-4 space-y-2">
           {WHATSAPP_VARIANTS.map((variant) => (
             <a
               key={variant}
@@ -185,7 +164,7 @@ function Launchpad({ data }: { data: MeResponse }) {
               target="_blank"
               rel="noopener noreferrer"
               onClick={() => shareClicked(variant)}
-              className="inline-flex min-h-11 items-center justify-center rounded-md bg-[#1F3A93] px-4 text-sm font-bold text-white"
+              className={buttonClass({ variant: "secondary", fullWidth: true })}
             >
               Share on WhatsApp · {WHATSAPP_VARIANT_LABELS[variant]}
             </a>
@@ -195,7 +174,7 @@ function Launchpad({ data }: { data: MeResponse }) {
             target="_blank"
             rel="noopener noreferrer"
             onClick={() => shareClicked("linkedin")}
-            className="inline-flex min-h-11 items-center justify-center rounded-md border border-[#1F3A93] px-4 text-sm font-bold text-[#1F3A93]"
+            className={buttonClass({ variant: "secondary", fullWidth: true })}
           >
             Share on LinkedIn
           </a>
@@ -207,83 +186,107 @@ function Launchpad({ data }: { data: MeResponse }) {
               shareClicked("story");
               void saveStoryImage(user.refCode, `ship60-${user.refCode}-story.png`);
             }}
-            className="inline-flex min-h-11 items-center justify-center rounded-md border border-[#DDE5F2] px-4 text-sm font-bold text-[#2E333B]"
+            className={buttonClass({ variant: "secondary", fullWidth: true })}
           >
             Download story image for Instagram
           </a>
-          <p className="mt-1 text-xs text-[#5A6472]">Long-press the image to save it.</p>
+          <p className="text-label text-ink-subtle">Long-press the image to save it.</p>
         </div>
       </Panel>
 
       <Panel className="mt-4">
         <SectionTitle>Reward progress</SectionTitle>
-        <p className="text-sm">
-          <span className="text-2xl font-bold text-[#1F3A93]">{total}</span>{" "}
-          {total === 1 ? "person joined" : "people joined"} through you ·{" "}
-          {stats.qualifiedReferrals} checked in
-        </p>
+        <div className="grid grid-cols-2 gap-4">
+          <Stat value={total} label="joined through you" />
+          <Stat value={stats.qualifiedReferrals} label="checked in" />
+        </div>
         <div
-          className="mt-3 h-3 w-full overflow-hidden rounded-full bg-[#DDE5F2]"
+          className="mt-5"
           role="progressbar"
           aria-valuenow={progress}
           aria-valuemin={0}
           aria-valuemax={100}
           aria-label="Progress to the next reward"
         >
-          <div className="h-full bg-[#1F3A93]" style={{ width: `${progress}%` }} />
+          <div className="flex items-baseline justify-between gap-3">
+            <span className="text-label text-ink-subtle">
+              {nextAt && stats.nextTierLabel ? "Next reward" : "All rewards unlocked"}
+            </span>
+            <span className="font-mono text-mono-data text-ink tabular-nums">{progress}%</span>
+          </div>
+          <div className="mt-2 h-0.5 w-full bg-surface-3">
+            <div className="h-0.5 bg-ink-muted" style={{ width: `${progress}%` }} />
+          </div>
         </div>
-        <p className="mt-2 text-sm">
+        <p className="mt-3 text-body-sm leading-relaxed text-ink-muted">
           {nextAt && stats.nextTierLabel
             ? `${Math.max(0, nextAt - total)} more to unlock: ${stats.nextTierLabel}`
             : "Every reward tier unlocked. Top referrers win cash prizes after the workshop."}
         </p>
-        <ul className="mt-3 space-y-1 text-sm">
-          {REWARD_TIERS.map((tier, index) => (
-            <li key={tier.label} className="flex items-center gap-2">
-              <span
-                aria-hidden="true"
-                className={cx(
-                  "inline-block h-3 w-3 rounded-full border border-[#1F3A93]",
-                  index <= stats.tierIndex ? "bg-[#1F3A93]" : "bg-white",
+        <ul className="mt-4 divide-y divide-hairline border-t border-hairline">
+          {REWARD_TIERS.map((tier, index) => {
+            const current = tier.on === "qualified" ? stats.qualifiedReferrals : total;
+            const unlocked = index < stats.tierIndex;
+            return (
+              <li
+                key={tier.label}
+                className="flex items-baseline justify-between gap-3 py-3"
+              >
+                <span className="min-w-0 text-body-sm leading-snug text-ink-muted">
+                  {tier.label}
+                  <span className="mt-0.5 block font-mono text-label text-ink-subtle">
+                    {tier.minReferrals}{" "}
+                    {tier.on === "qualified"
+                      ? "check-ins"
+                      : tier.minReferrals === 1
+                        ? "referral"
+                        : "referrals"}
+                  </span>
+                </span>
+                {unlocked ? (
+                  <span className="shrink-0 text-label font-medium text-success">Unlocked</span>
+                ) : (
+                  <span className="shrink-0 font-mono text-mono-data text-ink tabular-nums">
+                    {current}/{tier.minReferrals}
+                  </span>
                 )}
-              />
-              <span className={index <= stats.tierIndex ? "font-bold" : ""}>
-                {tier.label} · {tier.minReferrals}
-                {tier.on === "qualified" ? " check-ins" : " referrals"}
-              </span>
-            </li>
-          ))}
+              </li>
+            );
+          })}
         </ul>
       </Panel>
 
-      <div className="mt-4 grid grid-cols-2 gap-3">
-        <Panel>
-          <p className="text-xs font-bold text-[#2E333B]">Your rank</p>
-          <p className="mt-1 text-2xl font-bold text-[#1F3A93]">
-            {ranks.student ? `#${ranks.student}` : "—"}
-          </p>
-          <p className="text-xs">among students</p>
-        </Panel>
-        <Panel>
-          <p className="text-xs font-bold text-[#2E333B]">College rank</p>
-          <p className="mt-1 text-2xl font-bold text-[#1F3A93]">
-            {ranks.college ? `#${ranks.college.rank}` : "—"}
-          </p>
-          <p className="truncate text-xs">{ranks.college?.name ?? "Not ranked yet"}</p>
-        </Panel>
+      <div className="mt-4 grid grid-cols-2 divide-x divide-hairline border-y border-hairline">
+        <div className="min-w-0 py-4 pr-4">
+          <Stat
+            value={ranks.student ? `#${ranks.student}` : "—"}
+            label="your rank among students"
+          />
+        </div>
+        <div className="min-w-0 py-4 pl-4">
+          <Stat
+            value={ranks.college ? `#${ranks.college.rank}` : "—"}
+            label={ranks.college?.name ?? "college rank"}
+          />
+        </div>
       </div>
 
       <Panel className="mt-4">
         <SectionTitle>People you brought in</SectionTitle>
         {data.referrals.length === 0 ? (
-          <p className="text-sm">
+          <p className="text-body-sm leading-relaxed text-ink-muted">
             No one yet. Drop your link in one class group — that is how most seats fill.
           </p>
         ) : (
-          <ul className="divide-y divide-[#DDE5F2]">
+          <ul data-testid="referral-list" className="divide-y divide-hairline">
             {data.referrals.map((referral) => (
-              <li key={`${referral.firstName}-${referral.createdAt}`} className="flex items-center justify-between gap-2 py-2">
-                <span className="text-sm font-bold">{referral.firstName}</span>
+              <li
+                key={`${referral.firstName}-${referral.createdAt}`}
+                className="flex items-center justify-between gap-3 py-3"
+              >
+                <span className="min-w-0 truncate text-body-sm font-medium text-ink">
+                  {referral.firstName}
+                </span>
                 <StatusBadge status={referral.status} />
               </li>
             ))}
@@ -296,7 +299,7 @@ function Launchpad({ data }: { data: MeResponse }) {
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
           <a
             href={data.calendar.icsPath}
-            className="inline-flex min-h-11 items-center justify-center rounded-md border border-[#1F3A93] px-4 text-sm font-bold text-[#1F3A93]"
+            className={buttonClass({ variant: "secondary", fullWidth: true })}
           >
             Download .ics
           </a>
@@ -304,15 +307,18 @@ function Launchpad({ data }: { data: MeResponse }) {
             href={calendarHref}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex min-h-11 items-center justify-center rounded-md border border-[#1F3A93] px-4 text-sm font-bold text-[#1F3A93]"
+            className={buttonClass({ variant: "secondary", fullWidth: true })}
           >
             Google Calendar
           </a>
         </div>
       </Panel>
 
-      <p className="mt-6 text-center text-sm">
-        <Link className="font-bold text-[#1F3A93] underline" to="/leaderboard">
+      <p className="mt-8 text-center text-body-sm">
+        <Link
+          to="/leaderboard"
+          className="rounded-sm text-ink-muted underline decoration-hairline-strong underline-offset-4 transition-colors duration-150 hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-signal"
+        >
           See the leaderboard
         </Link>
       </p>

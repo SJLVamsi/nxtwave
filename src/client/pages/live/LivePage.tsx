@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { Button, Input, cn } from "../../design";
+import { CheckIcon, ConnectionStatus } from "../me/ui";
 import { readTokenFromUrl, useLiveRoom } from "./useLiveRoom";
 
 const STEP_LABELS = [
@@ -9,18 +11,6 @@ const STEP_LABELS = [
   "Deploy it",
   "Share it",
 ];
-
-const STATUS_COPY = {
-  connecting: "Connecting…",
-  open: "Live",
-  reconnecting: "Reconnecting…",
-  failed: "Offline",
-} as const;
-
-const card =
-  "rounded-lg border border-[#DDE5F2] bg-white p-4 dark:border-[#2A3040] dark:bg-[#1A1F2A]";
-const primary =
-  "rounded-md bg-[#1F3A93] px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50";
 
 export default function LivePage() {
   const [token] = useState<string | null>(() => readTokenFromUrl());
@@ -37,246 +27,289 @@ export default function LivePage() {
   const [guestName, setGuestName] = useState("");
 
   return (
-    <main className="mx-auto min-h-screen max-w-xl space-y-4 bg-[#FBFCFE] p-4 text-[#2E333B] dark:bg-[#12151C] dark:text-[#E6E9F0]">
-      <header className="flex items-start justify-between gap-3">
-        <div>
-          <h1 className="text-xl font-bold text-[#1F3A93] dark:text-[#9FB6F0]">Live build room</h1>
-          <p className="text-sm" aria-live="polite">
-            {snapshot.attendance} checked in
-          </p>
-        </div>
-        <span
-          className={`rounded-full px-3 py-1 text-xs font-semibold ${
-            status === "open" ? "bg-[#1F3A93] text-white" : "bg-[#FFE45C] text-[#2E333B]"
-          }`}
-        >
-          {STATUS_COPY[status]}
-        </span>
-      </header>
-
-      {error && (
-        <div className={`${card} border-[#D7263D]`}>
-          <p className="text-sm text-[#D7263D]">{error}</p>
-          <button type="button" onClick={retry} className={`${primary} mt-2`}>
-            Retry
-          </button>
-        </div>
-      )}
-
-      <section className={card} aria-label="Build step">
-        <p className="text-sm font-semibold">
-          Step {snapshot.step} of 6 — {STEP_LABELS[snapshot.step - 1]}
-        </p>
-        <ol className="mt-2 flex gap-1">
-          {STEP_LABELS.map((label, index) => (
-            <li
-              key={label}
-              title={label}
-              className={`h-2 flex-1 rounded-full ${index + 1 <= snapshot.step ? "bg-[#1F3A93]" : "bg-[#DDE5F2] dark:bg-[#2A3040]"}`}
-            />
-          ))}
-        </ol>
-      </section>
-
-      <section className={card}>
-        {snapshot.checkedIn ? (
-          <p
-            className="text-sm font-semibold text-[#1F3A93] dark:text-[#9FB6F0]"
-            data-testid="checked-in"
-          >
-            You are checked in. Your referral is counted.
-          </p>
-        ) : token || snapshot.hasSeat ? (
-          <button
-            type="button"
-            className={primary}
-            disabled={status !== "open"}
-            data-testid="checkin"
-            onClick={() => send({ type: "checkin" })}
-          >
-            I&apos;m here — check in
-          </button>
-        ) : (
-          <div className="space-y-2">
-            <p className="text-sm">
-              You&apos;re joining as a guest. Check-in needs a registered seat —{" "}
-              <a className="underline" href="/">
-                register first
-              </a>
-              .
+    <main className="min-h-screen bg-canvas font-sans text-ink">
+      <div className="mx-auto w-full max-w-xl space-y-4 px-4 pb-[calc(4rem+env(safe-area-inset-bottom))] pt-8">
+        <header className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <h1 className="font-display text-display-lg text-ink text-balance">
+              Live build room
+            </h1>
+            <p className="mt-1 text-body-sm text-ink-muted" aria-live="polite">
+              <span className="font-mono text-mono-data text-ink tabular-nums">
+                {snapshot.attendance}
+              </span>{" "}
+              checked in
             </p>
-            <div className="flex gap-2">
-              <label className="sr-only" htmlFor="guest-name">
-                Your name
-              </label>
-              <input
-                id="guest-name"
+          </div>
+          <ConnectionStatus status={status} />
+        </header>
+
+        {error ? (
+          <section className="rounded-panel border border-hairline bg-surface-1 p-4">
+            <p className="text-body-sm text-danger">{error}</p>
+            <Button variant="secondary" className="mt-3" onClick={retry}>
+              Retry
+            </Button>
+          </section>
+        ) : null}
+
+        <section className="rounded-panel border border-hairline bg-surface-1 p-4">
+          {snapshot.checkedIn ? (
+            <p
+              className="flex items-center gap-2 text-body-sm font-medium text-success"
+              data-testid="checked-in"
+            >
+              <CheckIcon />
+              You are checked in. Your referral is counted.
+            </p>
+          ) : token || snapshot.hasSeat ? (
+            <Button
+              variant="primary"
+              size="lg"
+              fullWidth
+              disabled={status !== "open"}
+              data-testid="checkin"
+              onClick={() => send({ type: "checkin" })}
+            >
+              I&apos;m here — check in
+            </Button>
+          ) : (
+            <div className="space-y-3">
+              <p className="text-body-sm leading-relaxed text-ink-muted">
+                You&apos;re joining as a guest. Check-in needs a registered seat —{" "}
+                <a
+                  className="rounded-sm text-ink underline decoration-hairline-strong underline-offset-4 transition-colors duration-150 hover:text-signal"
+                  href="/"
+                >
+                  register first
+                </a>
+                .
+              </p>
+              <Input
+                label="Your name"
                 value={guestName}
                 maxLength={80}
+                autoComplete="off"
                 onChange={(event) => setGuestName(event.target.value)}
                 placeholder="Your name (for the help queue)"
-                className="min-w-0 flex-1 rounded-md border border-[#DDE5F2] px-3 py-2 text-sm dark:border-[#2A3040] dark:bg-[#12151C]"
               />
-              <button
-                type="button"
-                className={primary}
+              <Button
+                variant="secondary"
+                fullWidth
                 disabled={status !== "open" || guestName.trim().length < 2}
                 onClick={() => send({ type: "join", name: guestName.trim() })}
               >
                 Set
-              </button>
-            </div>
-          </div>
-        )}
-      </section>
-
-      {poll && (
-        <section className={card} aria-label="Poll">
-          <h2 className="text-sm font-semibold">{poll.question}</h2>
-          <ul className="mt-2 space-y-2">
-            {poll.options.map((option, index) => {
-              const answered = answeredPoll === poll.questionId;
-              return (
-                <li key={`${poll.questionId}-${index}`}>
-                  <button
-                    type="button"
-                    disabled={answered}
-                    onClick={() => {
-                      if (
-                        send({ type: "poll_answer", questionId: poll.questionId, option: index })
-                      ) {
-                        setAnsweredPoll(poll.questionId);
-                      }
-                    }}
-                    className="flex w-full items-center justify-between rounded-md border border-[#DDE5F2] px-3 py-2 text-left text-sm disabled:opacity-80 dark:border-[#2A3040]"
-                  >
-                    <span>{option}</span>
-                    {answered && <span className="font-semibold">{poll.counts[index] ?? 0}</span>}
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
-        </section>
-      )}
-
-      {quiz && (
-        <section className={card} aria-label="Quiz">
-          <h2 className="text-sm font-semibold">{quiz.question}</h2>
-          <ul className="mt-2 space-y-2">
-            {quiz.options.map((option, index) => {
-              const answered = answeredQuiz === quiz.questionId;
-              return (
-                <li key={`${quiz.questionId}-${index}`}>
-                  <button
-                    type="button"
-                    disabled={answered}
-                    onClick={() => {
-                      if (
-                        send({ type: "quiz_answer", questionId: quiz.questionId, option: index })
-                      ) {
-                        setAnsweredQuiz(quiz.questionId);
-                      }
-                    }}
-                    className="flex w-full items-center justify-between rounded-md border border-[#DDE5F2] px-3 py-2 text-left text-sm disabled:opacity-80 dark:border-[#2A3040]"
-                  >
-                    <span>{option}</span>
-                    {answered && <span className="font-semibold">{quiz.counts[index] ?? 0}</span>}
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
-          {leaderboard.length > 0 && (
-            <div className="mt-3">
-              <h3 className="text-xs font-semibold uppercase tracking-wide">Leaderboard</h3>
-              <ol className="mt-1 space-y-1 text-sm">
-                {leaderboard.map((row) => (
-                  <li key={`${row.rank}-${row.name}`} className="flex justify-between">
-                    <span>
-                      {row.rank}. {row.name}
-                    </span>
-                    <span className="font-semibold">{row.score}</span>
-                  </li>
-                ))}
-              </ol>
+              </Button>
             </div>
           )}
         </section>
-      )}
 
-      <section className={card}>
-        <h2 className="text-sm font-semibold">Stuck? Ask the host.</h2>
-        {helpSent ? (
-          <p className="mt-1 text-sm text-[#1F3A93] dark:text-[#9FB6F0]">
-            You&apos;re in the help queue.
+        <section
+          className="rounded-panel border border-hairline bg-surface-1 p-4"
+          aria-label="Build step"
+        >
+          <p className="text-body-sm font-medium text-ink">
+            Step <span className="font-mono text-mono-data tabular-nums">{snapshot.step}</span> of 6
+            · {STEP_LABELS[snapshot.step - 1]}
           </p>
-        ) : (
-          <form
-            className="mt-2 flex gap-2"
-            onSubmit={(event) => {
-              event.preventDefault();
-              const note = helpNote.trim();
-              if (send({ type: "stuck", ...(note ? { note } : {}) })) {
-                setHelpSent(true);
-                setHelpNote("");
-              }
-            }}
-          >
-            <label className="sr-only" htmlFor="help-note">
-              What are you stuck on?
-            </label>
-            <input
-              id="help-note"
-              value={helpNote}
-              maxLength={280}
-              onChange={(event) => setHelpNote(event.target.value)}
-              placeholder="What are you stuck on? (optional)"
-              className="min-w-0 flex-1 rounded-md border border-[#DDE5F2] px-3 py-2 text-sm dark:border-[#2A3040] dark:bg-[#12151C]"
-            />
-            <button type="submit" className={primary} disabled={status !== "open"}>
-              I&apos;m stuck
-            </button>
-          </form>
-        )}
-      </section>
+          <ol className="mt-3 grid grid-cols-6 gap-1" aria-hidden="true">
+            {STEP_LABELS.map((label, index) => {
+              const step = index + 1;
+              return (
+                <li
+                  key={label}
+                  title={label}
+                  className={cn(
+                    "h-0.5 transition-colors duration-[var(--dur-ui)] ease-[var(--ease-out)]",
+                    step < snapshot.step
+                      ? "bg-ink-subtle"
+                      : step === snapshot.step
+                        ? "bg-signal"
+                        : "bg-hairline",
+                  )}
+                />
+              );
+            })}
+          </ol>
+        </section>
 
-      <section className={card}>
-        <h2 className="text-sm font-semibold">Shipped it?</h2>
-        {shipSent ? (
-          <p className="mt-1 text-sm text-[#1F3A93] dark:text-[#9FB6F0]">
-            Nice. Your link is on the host feed.
-          </p>
-        ) : (
-          <form
-            className="mt-2 flex gap-2"
-            onSubmit={(event) => {
-              event.preventDefault();
-              if (send({ type: "shipped", url: shipUrl.trim() })) {
-                setShipSent(true);
-                setShipUrl("");
-              }
-            }}
+        {poll ? (
+          <section
+            className="overflow-hidden rounded-panel border border-hairline bg-surface-1"
+            aria-label="Poll"
           >
-            <label className="sr-only" htmlFor="ship-url">
-              Deployed project link
-            </label>
-            <input
-              id="ship-url"
-              type="url"
-              required
-              value={shipUrl}
-              maxLength={500}
-              onChange={(event) => setShipUrl(event.target.value)}
-              placeholder="https://your-project.example"
-              className="min-w-0 flex-1 rounded-md border border-[#DDE5F2] px-3 py-2 text-sm dark:border-[#2A3040] dark:bg-[#12151C]"
-            />
-            <button type="submit" className={primary} disabled={status !== "open"}>
-              I shipped it
-            </button>
-          </form>
-        )}
-      </section>
+            <h2 className="px-4 pb-3 pt-4 text-title text-ink text-balance">{poll.question}</h2>
+            <ul className="divide-y divide-hairline border-t border-hairline">
+              {poll.options.map((option, index) => {
+                const answered = answeredPoll === poll.questionId;
+                return (
+                  <li key={`${poll.questionId}-${index}`}>
+                    <button
+                      type="button"
+                      disabled={answered}
+                      onClick={() => {
+                        if (
+                          send({ type: "poll_answer", questionId: poll.questionId, option: index })
+                        ) {
+                          setAnsweredPoll(poll.questionId);
+                        }
+                      }}
+                      className={cn(
+                        "flex min-h-11 w-full items-center justify-between gap-3 px-4 py-3 text-left text-body-sm transition-colors duration-[var(--dur-ui)]",
+                        answered
+                          ? "text-ink-muted"
+                          : "text-ink hover:bg-surface-2 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-signal",
+                      )}
+                    >
+                      <span className="min-w-0">{option}</span>
+                      {answered ? (
+                        <span className="shrink-0 font-mono text-mono-data text-ink tabular-nums">
+                          {poll.counts[index] ?? 0}
+                        </span>
+                      ) : null}
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          </section>
+        ) : null}
+
+        {quiz ? (
+          <section
+            className="overflow-hidden rounded-panel border border-hairline bg-surface-1"
+            aria-label="Quiz"
+          >
+            <h2 className="px-4 pb-3 pt-4 text-title text-ink text-balance">{quiz.question}</h2>
+            <ul className="divide-y divide-hairline border-t border-hairline">
+              {quiz.options.map((option, index) => {
+                const answered = answeredQuiz === quiz.questionId;
+                return (
+                  <li key={`${quiz.questionId}-${index}`}>
+                    <button
+                      type="button"
+                      disabled={answered}
+                      onClick={() => {
+                        if (
+                          send({ type: "quiz_answer", questionId: quiz.questionId, option: index })
+                        ) {
+                          setAnsweredQuiz(quiz.questionId);
+                        }
+                      }}
+                      className={cn(
+                        "flex min-h-11 w-full items-center justify-between gap-3 px-4 py-3 text-left text-body-sm transition-colors duration-[var(--dur-ui)]",
+                        answered
+                          ? "text-ink-muted"
+                          : "text-ink hover:bg-surface-2 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-signal",
+                      )}
+                    >
+                      <span className="min-w-0">{option}</span>
+                      {answered ? (
+                        <span className="shrink-0 font-mono text-mono-data text-ink tabular-nums">
+                          {quiz.counts[index] ?? 0}
+                        </span>
+                      ) : null}
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+            {leaderboard.length > 0 ? (
+              <div className="border-t border-hairline px-4 py-3">
+                <h3 className="text-label font-medium text-ink-subtle">Leaderboard</h3>
+                <ol className="mt-2 divide-y divide-hairline">
+                  {leaderboard.map((row) => (
+                    <li
+                      key={`${row.rank}-${row.name}`}
+                      className="flex items-baseline justify-between gap-3 py-2 text-body-sm"
+                    >
+                      <span className="min-w-0 truncate">
+                        <span className="mr-2 font-mono text-mono-data text-ink-subtle tabular-nums">
+                          {row.rank}
+                        </span>
+                        {row.name}
+                      </span>
+                      <span className="shrink-0 font-mono text-mono-data text-ink tabular-nums">
+                        {row.score}
+                      </span>
+                    </li>
+                  ))}
+                </ol>
+              </div>
+            ) : null}
+          </section>
+        ) : null}
+
+        <section
+          className="rounded-panel border border-hairline bg-surface-1 p-4"
+          aria-label="Ask the host for help"
+        >
+          <h2 className="text-body-sm font-medium text-ink">Stuck? Ask the host.</h2>
+          {helpSent ? (
+            <p className="mt-2 text-body-sm text-success">You&apos;re in the help queue.</p>
+          ) : (
+            <form
+              className="mt-3 space-y-2"
+              onSubmit={(event) => {
+                event.preventDefault();
+                const note = helpNote.trim();
+                if (send({ type: "stuck", ...(note ? { note } : {}) })) {
+                  setHelpSent(true);
+                  setHelpNote("");
+                }
+              }}
+            >
+              <Input
+                label="What are you stuck on?"
+                value={helpNote}
+                maxLength={280}
+                autoComplete="off"
+                onChange={(event) => setHelpNote(event.target.value)}
+                placeholder="What are you stuck on? (optional)"
+              />
+              <Button variant="secondary" fullWidth type="submit" disabled={status !== "open"}>
+                I&apos;m stuck
+              </Button>
+            </form>
+          )}
+        </section>
+
+        <section
+          className="rounded-panel border border-hairline bg-surface-1 p-4"
+          aria-label="Share your shipped project"
+        >
+          <h2 className="text-body-sm font-medium text-ink">Shipped it?</h2>
+          {shipSent ? (
+            <p className="mt-2 text-body-sm text-success">Nice. Your link is on the host feed.</p>
+          ) : (
+            <form
+              className="mt-3 space-y-2"
+              onSubmit={(event) => {
+                event.preventDefault();
+                if (send({ type: "shipped", url: shipUrl.trim() })) {
+                  setShipSent(true);
+                  setShipUrl("");
+                }
+              }}
+            >
+              <Input
+                label="Deployed project link"
+                type="url"
+                required
+                value={shipUrl}
+                maxLength={500}
+                inputMode="url"
+                placeholder="https://your-project.example"
+                onChange={(event) => setShipUrl(event.target.value)}
+              />
+              <Button variant="secondary" fullWidth type="submit" disabled={status !== "open"}>
+                I shipped it
+              </Button>
+            </form>
+          )}
+        </section>
+      </div>
     </main>
   );
 }

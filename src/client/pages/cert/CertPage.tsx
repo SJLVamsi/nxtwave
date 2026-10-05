@@ -1,7 +1,13 @@
+/**
+ * WS7 — Public certificate verification (PRD M11).
+ * Flight Deck restyle (DESIGN.md §8); fetch behavior and copy unchanged.
+ */
 import { useQuery } from "@tanstack/react-query";
+import { type ReactNode } from "react";
 import { Link, useParams } from "react-router";
-import { SIMULATED_LABEL } from "../../../shared/constants";
 import type { CertificateResponse } from "../../../shared/contracts";
+import { SimulatedBadge, buttonClass, cn } from "../../design";
+import { CheckIcon } from "../me/ui";
 
 async function fetchCertificate(id: string): Promise<CertificateResponse | null> {
   const response = await fetch(`/api/submissions/cert/${encodeURIComponent(id)}`);
@@ -13,7 +19,19 @@ async function fetchCertificate(id: string): Promise<CertificateResponse | null>
 function formatDate(iso: string): string {
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) return iso;
-  return new Intl.DateTimeFormat("en-IN", { dateStyle: "long", timeZone: "Asia/Kolkata" }).format(date);
+  return new Intl.DateTimeFormat("en-IN", { dateStyle: "long", timeZone: "Asia/Kolkata" }).format(
+    date,
+  );
+}
+
+function CertShell({ children }: { children: ReactNode }) {
+  return (
+    <main className="min-h-screen bg-canvas font-sans text-ink">
+      <div className="mx-auto w-full max-w-xl px-4 pb-[calc(4rem+env(safe-area-inset-bottom))] pt-10">
+        {children}
+      </div>
+    </main>
+  );
 }
 
 export default function CertPage() {
@@ -26,25 +44,40 @@ export default function CertPage() {
   });
 
   if (isPending) {
-    return <main className="p-6 text-sm opacity-70">Verifying certificate…</main>;
+    return (
+      <CertShell>
+        <p className="text-body-sm text-ink-muted">Verifying certificate…</p>
+      </CertShell>
+    );
   }
   if (isError) {
     return (
-      <main className="mx-auto max-w-xl px-5 py-10 text-[#2E333B]">
-        <h1 className="text-xl font-bold">Could not verify this certificate</h1>
-        <p className="mt-2 text-sm">Please try again in a moment.</p>
-      </main>
+      <CertShell>
+        <h1 className="font-display text-display-lg text-ink text-balance">
+          Could not verify this certificate
+        </h1>
+        <p className="mt-3 text-body-sm leading-relaxed text-ink-muted">
+          Please try again in a moment.
+        </p>
+      </CertShell>
     );
   }
   if (!data) {
     return (
-      <main className="mx-auto max-w-xl px-5 py-10 text-[#2E333B]">
-        <h1 className="text-xl font-bold">No certificate with that id</h1>
-        <p className="mt-2 text-sm">Check the link, or ask the student to share their certificate id again.</p>
-        <Link className="mt-4 inline-block font-semibold text-[#1F3A93]" to="/">
+      <CertShell>
+        <h1 className="font-display text-display-lg text-ink text-balance">
+          No certificate with that id
+        </h1>
+        <p className="mt-3 text-body-sm leading-relaxed text-ink-muted">
+          Check the link, or ask the student to share their certificate id again.
+        </p>
+        <Link
+          to="/"
+          className="mt-5 inline-block rounded-sm text-body-sm text-ink-muted underline decoration-hairline-strong underline-offset-4 transition-colors duration-150 hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-signal"
+        >
           Go to the workshop page
         </Link>
-      </main>
+      </CertShell>
     );
   }
 
@@ -53,47 +86,54 @@ export default function CertPage() {
   }. Verify: ${window.location.href}`;
 
   return (
-    <main className="mx-auto min-h-screen max-w-xl px-5 py-10 text-[#2E333B]">
-      <p className="text-sm font-bold tracking-wide text-[#1F3A93]">NxtWave · Ship60</p>
-      <section className="mt-4 rounded-xl border border-[#DDE5F2] bg-white p-6">
-        <h1 className="text-2xl font-bold">Certificate of completion</h1>
-        <p className="mt-4 text-lg font-semibold">{data.name}</p>
-        {data.projectTitle && (
-          <p className="mt-1 text-base">
-            built <span className="bg-[#FFE45C] px-1">{data.projectTitle}</span>
+    <CertShell>
+      <section className="rounded-panel border border-hairline bg-surface-1">
+        <div className="px-5 py-6 sm:px-6">
+          <h1 className="font-display text-display-lg text-ink text-balance">
+            Certificate of completion
+          </h1>
+          <p className="mt-6 text-title text-ink">{data.name}</p>
+          {data.projectTitle ? (
+            <p className="mt-1 text-body-sm leading-relaxed text-ink-muted">
+              built <span className="font-medium text-ink">{data.projectTitle}</span>
+            </p>
+          ) : null}
+          <dl className="mt-6 divide-y divide-hairline border-y border-hairline text-body-sm">
+            <div className="flex items-baseline justify-between gap-4 py-2.5">
+              <dt className="shrink-0 text-ink-subtle">College</dt>
+              <dd className="text-right">{data.college ?? "NxtWave workshop"}</dd>
+            </div>
+            <div className="flex items-baseline justify-between gap-4 py-2.5">
+              <dt className="shrink-0 text-ink-subtle">Issued</dt>
+              <dd className="text-right">{formatDate(data.issuedAt)}</dd>
+            </div>
+            <div className="flex items-baseline justify-between gap-4 py-2.5">
+              <dt className="shrink-0 text-ink-subtle">Workshop</dt>
+              <dd className="min-w-0 break-all text-right font-mono text-label tabular-nums">
+                {data.workshopId}
+              </dd>
+            </div>
+          </dl>
+          <div className="mt-4 flex flex-wrap items-center gap-2">
+            <span
+              className={cn(
+                "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-label font-medium",
+                data.valid ? "border-success/40 text-success" : "border-warning/40 text-warning",
+              )}
+            >
+              {data.valid ? <CheckIcon className="h-3.5 w-3.5" /> : null}
+              {data.valid ? "Verified certificate" : "Verification pending"}
+            </span>
+            {data.isSimulated ? <SimulatedBadge /> : null}
+          </div>
+          <p className="mt-5 break-all font-mono text-label text-ink-subtle">
+            Certificate id: {data.certId}
           </p>
-        )}
-        <dl className="mt-5 space-y-1 text-sm text-[#5A6472]">
-          <div>
-            <dt className="inline font-semibold text-[#2E333B]">College: </dt>
-            <dd className="inline">{data.college ?? "NxtWave workshop"}</dd>
-          </div>
-          <div>
-            <dt className="inline font-semibold text-[#2E333B]">Issued: </dt>
-            <dd className="inline">{formatDate(data.issuedAt)}</dd>
-          </div>
-          <div>
-            <dt className="inline font-semibold text-[#2E333B]">Workshop: </dt>
-            <dd className="inline">{data.workshopId}</dd>
-          </div>
-        </dl>
-        <span
-          className={`mt-4 inline-block rounded-full px-3 py-1 text-xs font-bold ${
-            data.valid ? "bg-[#E7F6EC] text-[#1D6B3A]" : "bg-[#FDECEF] text-[#B01731]"
-          }`}
-        >
-          {data.valid ? "Verified certificate" : "Verification pending"}
-        </span>
-        {data.isSimulated ? (
-          <span className="mt-4 ml-2 inline-block rounded-full border border-[#DDE5F2] bg-[#FFE45C] px-3 py-1 text-xs font-bold text-[#2E333B]">
-            {SIMULATED_LABEL}
-          </span>
-        ) : null}
-        <p className="mt-4 break-all text-xs text-[#5A6472]">Certificate id: {data.certId}</p>
+        </div>
       </section>
       <div className="mt-5 flex flex-col gap-3">
         <a
-          className="rounded-lg bg-[#1F3A93] px-4 py-3 text-center font-bold text-white"
+          className={buttonClass({ variant: "primary", size: "lg", fullWidth: true })}
           href={`https://wa.me/?text=${encodeURIComponent(shareText)}`}
           target="_blank"
           rel="noreferrer"
@@ -101,13 +141,13 @@ export default function CertPage() {
           Share on WhatsApp
         </a>
         <button
-          className="rounded-lg border border-[#1F3A93] px-4 py-3 font-bold text-[#1F3A93]"
+          className={buttonClass({ variant: "secondary", size: "lg", fullWidth: true })}
           type="button"
           onClick={() => window.print()}
         >
           Print / save as PDF
         </button>
       </div>
-    </main>
+    </CertShell>
   );
 }

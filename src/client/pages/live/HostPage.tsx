@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { Button, Input, cn } from "../../design";
+import { ConnectionStatus } from "../me/ui";
 import { useLiveRoom } from "./useLiveRoom";
 
 const STEP_LABELS = [
@@ -10,19 +12,9 @@ const STEP_LABELS = [
   "Share it",
 ];
 
-const STATUS_COPY = {
-  connecting: "Connecting…",
-  open: "Live",
-  reconnecting: "Reconnecting…",
-  failed: "Offline",
-} as const;
-
-const card =
-  "rounded-lg border border-[#DDE5F2] bg-white p-4 dark:border-[#2A3040] dark:bg-[#1A1F2A]";
-const primary =
-  "rounded-md bg-[#1F3A93] px-3 py-1.5 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50";
-const input =
-  "min-w-0 flex-1 rounded-md border border-[#DDE5F2] px-2 py-1.5 text-sm dark:border-[#2A3040] dark:bg-[#12151C]";
+function addOption(options: string[], limit: number): string[] {
+  return options.length < limit ? [...options, ""] : options;
+}
 
 export default function HostPage() {
   const { snapshot, status, stuck, shipped, error, send, retry } = useLiveRoom("host", null);
@@ -62,231 +54,244 @@ export default function HostPage() {
   };
 
   return (
-    <main className="mx-auto min-h-screen max-w-3xl space-y-4 bg-[#FBFCFE] p-4 text-[#2E333B] dark:bg-[#12151C] dark:text-[#E6E9F0]">
-      <header className="flex items-start justify-between gap-3">
-        <div>
-          <h1 className="text-xl font-bold text-[#1F3A93] dark:text-[#9FB6F0]">Host console</h1>
-          <p className="text-sm" aria-live="polite">
-            {snapshot.attendance} checked in · step {snapshot.step} of 6
-          </p>
-        </div>
-        <div className="text-right">
-          <span
-            className={`rounded-full px-3 py-1 text-xs font-semibold ${
-              status === "open" ? "bg-[#1F3A93] text-white" : "bg-[#FFE45C] text-[#2E333B]"
-            }`}
-          >
-            {STATUS_COPY[status]}
-          </span>
-          {status !== "open" && (
-            <button type="button" className={`${primary} ml-2`} onClick={retry}>
+    <main className="min-h-screen bg-canvas font-sans text-ink">
+      <div className="mx-auto w-full max-w-xl space-y-4 px-4 pb-[calc(4rem+env(safe-area-inset-bottom))] pt-8">
+        <header className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <h1 className="font-display text-display-lg text-ink text-balance">Host console</h1>
+            <p className="mt-1 text-body-sm text-ink-muted" aria-live="polite">
+              <span className="font-mono text-mono-data text-ink tabular-nums">
+                {snapshot.attendance}
+              </span>{" "}
+              checked in · step{" "}
+              <span className="font-mono text-mono-data text-ink tabular-nums">
+                {snapshot.step}
+              </span>{" "}
+              of 6
+            </p>
+          </div>
+          <div className="flex shrink-0 items-center gap-2">
+            <ConnectionStatus status={status} />
+          </div>
+        </header>
+
+        {error ? (
+          <section className="rounded-panel border border-hairline bg-surface-1 p-4">
+            <p className="text-body-sm text-danger">{error}</p>
+            <Button variant="secondary" className="mt-3" onClick={retry}>
               Retry
-            </button>
-          )}
-        </div>
-      </header>
+            </Button>
+          </section>
+        ) : null}
 
-      {error && (
-        <div className={`${card} border-[#D7263D]`}>
-          <p className="text-sm text-[#D7263D]">{error}</p>
-        </div>
-      )}
+        <section
+          className="overflow-hidden rounded-panel border border-hairline bg-surface-1"
+          aria-label="Build step control"
+        >
+          <h2 className="px-4 pb-1 pt-4 text-title text-ink">Build step</h2>
+          <ol className="mt-2 divide-y divide-hairline border-t border-hairline">
+            {STEP_LABELS.map((label, index) => {
+              const step = index + 1;
+              const active = snapshot.step === step;
+              return (
+                <li key={label}>
+                  <button
+                    type="button"
+                    disabled={status !== "open"}
+                    aria-current={active ? "step" : undefined}
+                    onClick={() => send({ type: "advance_step", step })}
+                    className={cn(
+                      "flex min-h-11 w-full items-center justify-between gap-3 px-4 py-3 text-left text-body-sm transition-colors duration-[var(--dur-ui)]",
+                      active ? "text-signal" : "text-ink-muted",
+                      status === "open" && !active && "hover:bg-surface-2 hover:text-ink",
+                    )}
+                  >
+                    <span className="min-w-0 truncate">
+                      <span
+                        className={cn(
+                          "mr-2 font-mono text-mono-data tabular-nums",
+                          active ? "text-signal" : "text-ink-subtle",
+                        )}
+                      >
+                        {step}
+                      </span>
+                      {label}
+                    </span>
+                    {active ? (
+                      <span className="text-label font-medium text-signal">Current</span>
+                    ) : null}
+                  </button>
+                </li>
+              );
+            })}
+          </ol>
+        </section>
 
-      <section className={card} aria-label="Build step control">
-        <h2 className="text-sm font-semibold">Build step</h2>
-        <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3">
-          {STEP_LABELS.map((label, index) => {
-            const step = index + 1;
-            const active = snapshot.step === step;
-            return (
-              <button
-                key={label}
-                type="button"
-                disabled={status !== "open"}
-                onClick={() => send({ type: "advance_step", step })}
-                className={`rounded-md border px-3 py-2 text-left text-sm ${
-                  active
-                    ? "border-[#1F3A93] bg-[#1F3A93] text-white"
-                    : "border-[#DDE5F2] dark:border-[#2A3040]"
-                }`}
-              >
-                {step}. {label}
-              </button>
-            );
-          })}
-        </div>
-      </section>
-
-      <div className="grid gap-4 md:grid-cols-2">
-        <section className={card} aria-label="Launch poll">
-          <h2 className="text-sm font-semibold">Launch a poll</h2>
-          <label className="mt-2 block text-xs" htmlFor="poll-question">
-            Question
-          </label>
-          <input
-            id="poll-question"
-            value={pollQuestion}
-            maxLength={200}
-            onChange={(event) => setPollQuestion(event.target.value)}
-            className={`${input} mt-1 w-full`}
-          />
-          <div className="mt-2 space-y-2">
+        <section
+          className="rounded-panel border border-hairline bg-surface-1 p-4"
+          aria-label="Launch poll"
+        >
+          <h2 className="text-title text-ink">Launch a poll</h2>
+          <div className="mt-3 space-y-3">
+            <Input
+              label="Question"
+              value={pollQuestion}
+              maxLength={200}
+              autoComplete="off"
+              onChange={(event) => setPollQuestion(event.target.value)}
+            />
             {pollOptions.map((option, index) => (
-              <input
+              <Input
                 key={index}
+                label={`Option ${index + 1}`}
                 value={option}
                 maxLength={80}
+                autoComplete="off"
                 onChange={(event) =>
                   setPollOptions(
                     pollOptions.map((value, i) => (i === index ? event.target.value : value)),
                   )
                 }
-                placeholder={`Option ${index + 1}`}
-                className={`${input} w-full`}
               />
             ))}
           </div>
-          <div className="mt-2 flex gap-2">
-            <button
-              type="button"
-              className={input}
-              onClick={() => pollOptions.length < 6 && setPollOptions([...pollOptions, ""])}
-            >
+          <div className="mt-3 flex flex-wrap gap-2">
+            <Button variant="secondary" onClick={() => setPollOptions(addOption(pollOptions, 6))}>
               Add option
-            </button>
-            {pollOptions.length > 2 && (
-              <button
-                type="button"
-                className={input}
-                onClick={() => setPollOptions(pollOptions.slice(0, -1))}
-              >
+            </Button>
+            {pollOptions.length > 2 ? (
+              <Button variant="ghost" onClick={() => setPollOptions(pollOptions.slice(0, -1))}>
                 Remove
-              </button>
-            )}
-            <button
-              type="button"
-              className={primary}
-              disabled={status !== "open"}
-              onClick={launchPoll}
-            >
+              </Button>
+            ) : null}
+            <Button variant="primary" disabled={status !== "open"} onClick={launchPoll}>
               Launch poll
-            </button>
+            </Button>
           </div>
         </section>
 
-        <section className={card} aria-label="Launch quiz">
-          <h2 className="text-sm font-semibold">Launch a quiz question</h2>
-          <label className="mt-2 block text-xs" htmlFor="quiz-question">
-            Question
-          </label>
-          <input
-            id="quiz-question"
-            value={quizQuestion}
-            maxLength={200}
-            onChange={(event) => setQuizQuestion(event.target.value)}
-            className={`${input} mt-1 w-full`}
-          />
-          <div className="mt-2 space-y-2">
+        <section
+          className="rounded-panel border border-hairline bg-surface-1 p-4"
+          aria-label="Launch quiz"
+        >
+          <h2 className="text-title text-ink">Launch a quiz question</h2>
+          <div className="mt-3 space-y-3">
+            <Input
+              label="Question"
+              value={quizQuestion}
+              maxLength={200}
+              autoComplete="off"
+              onChange={(event) => setQuizQuestion(event.target.value)}
+            />
             {quizOptions.map((option, index) => (
-              <div key={index} className="flex items-center gap-2">
+              <div key={index} className="flex items-end gap-2">
                 <input
                   type="radio"
                   name="quiz-correct"
                   checked={quizCorrect === index}
                   onChange={() => setQuizCorrect(index)}
                   aria-label={`Option ${index + 1} is correct`}
+                  className="mb-3 h-4 w-4 shrink-0"
                 />
-                <input
-                  value={option}
-                  maxLength={80}
-                  onChange={(event) =>
-                    setQuizOptions(
-                      quizOptions.map((value, i) => (i === index ? event.target.value : value)),
-                    )
-                  }
-                  placeholder={`Option ${index + 1}`}
-                  className={`${input} w-full`}
-                />
+                <div className="min-w-0 flex-1">
+                  <Input
+                    label={`Option ${index + 1}`}
+                    value={option}
+                    maxLength={80}
+                    autoComplete="off"
+                    onChange={(event) =>
+                      setQuizOptions(
+                        quizOptions.map((value, i) => (i === index ? event.target.value : value)),
+                      )
+                    }
+                  />
+                </div>
               </div>
             ))}
           </div>
-          <div className="mt-2 flex gap-2">
-            <button
-              type="button"
-              className={input}
-              onClick={() => quizOptions.length < 6 && setQuizOptions([...quizOptions, ""])}
-            >
+          <div className="mt-3 flex flex-wrap gap-2">
+            <Button variant="secondary" onClick={() => setQuizOptions(addOption(quizOptions, 6))}>
               Add option
-            </button>
-            {quizOptions.length > 2 && (
-              <button
-                type="button"
-                className={input}
+            </Button>
+            {quizOptions.length > 2 ? (
+              <Button
+                variant="ghost"
                 onClick={() => {
                   setQuizOptions(quizOptions.slice(0, -1));
                   setQuizCorrect(0);
                 }}
               >
                 Remove
-              </button>
-            )}
-            <button
-              type="button"
-              className={primary}
-              disabled={status !== "open"}
-              onClick={launchQuiz}
-            >
+              </Button>
+            ) : null}
+            <Button variant="primary" disabled={status !== "open"} onClick={launchQuiz}>
               Launch quiz
-            </button>
+            </Button>
           </div>
         </section>
+
+        {notice ? (
+          <p role="status" className="text-body-sm text-ink-muted">
+            {notice}
+          </p>
+        ) : null}
+
+        <section
+          className="rounded-panel border border-hairline bg-surface-1 p-4"
+          aria-label="Stuck queue"
+        >
+          <h2 className="text-title text-ink">Help queue ({stuck.length})</h2>
+          {stuck.length === 0 ? (
+            <p className="mt-2 text-body-sm text-ink-subtle">No one is stuck right now.</p>
+          ) : (
+            <ul className="mt-2 divide-y divide-hairline">
+              {stuck.map((item) => (
+                <li key={item.id} className="flex items-center justify-between gap-3 py-3">
+                  <span className="min-w-0 text-body-sm leading-relaxed text-ink-muted">
+                    <strong className="font-medium text-ink">{item.name}</strong>
+                    {item.note ? ` — ${item.note}` : ""}
+                  </span>
+                  <Button
+                    variant="secondary"
+                    className="shrink-0"
+                    disabled={status !== "open"}
+                    onClick={() => send({ type: "resolve_stuck", entryId: item.id })}
+                  >
+                    Resolve
+                  </Button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+
+        <section
+          className="rounded-panel border border-hairline bg-surface-1 p-4"
+          aria-label="Shipped feed"
+        >
+          <h2 className="text-title text-ink">Shipped ({shipped.length})</h2>
+          {shipped.length === 0 ? (
+            <p className="mt-2 text-body-sm text-ink-subtle">Nothing shipped yet.</p>
+          ) : (
+            <ul className="mt-2 divide-y divide-hairline">
+              {shipped.map((item) => (
+                <li key={`${item.at}-${item.url}`} className="py-3 text-body-sm">
+                  <span className="font-medium text-ink">{item.name}</span>
+                  <span className="mx-1.5 text-ink-subtle">—</span>
+                  <a
+                    className="break-all text-ink-muted underline decoration-hairline-strong underline-offset-4 transition-colors duration-150 hover:text-ink"
+                    href={item.url}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    {item.url}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
       </div>
-
-      {notice && <p className="text-sm text-[#1F3A93] dark:text-[#9FB6F0]">{notice}</p>}
-
-      <section className={card} aria-label="Stuck queue">
-        <h2 className="text-sm font-semibold">Help queue ({stuck.length})</h2>
-        {stuck.length === 0 ? (
-          <p className="mt-1 text-sm opacity-70">No one is stuck right now.</p>
-        ) : (
-          <ul className="mt-2 space-y-2">
-            {stuck.map((item) => (
-              <li key={item.id} className="flex items-center justify-between gap-3 text-sm">
-                <span>
-                  <strong>{item.name}</strong>
-                  {item.note ? ` — ${item.note}` : ""}
-                </span>
-                <button
-                  type="button"
-                  className={primary}
-                  disabled={status !== "open"}
-                  onClick={() => send({ type: "resolve_stuck", entryId: item.id })}
-                >
-                  Resolve
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
-
-      <section className={card} aria-label="Shipped feed">
-        <h2 className="text-sm font-semibold">Shipped ({shipped.length})</h2>
-        {shipped.length === 0 ? (
-          <p className="mt-1 text-sm opacity-70">Nothing shipped yet.</p>
-        ) : (
-          <ul className="mt-2 space-y-1 text-sm">
-            {shipped.map((item) => (
-              <li key={`${item.at}-${item.url}`}>
-                <strong>{item.name}</strong> —{" "}
-                <a className="underline" href={item.url} target="_blank" rel="noreferrer">
-                  {item.url}
-                </a>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
     </main>
   );
 }

@@ -1,19 +1,13 @@
 /**
- * WS4 — Leaderboards (PRD §4.2 M5): students and colleges tabs, countdown,
- * "Simulated data" label whenever any returned row is simulated.
+ * WS4 — Leaderboards (PRD §4.2 M5): students and colleges tabs, header
+ * countdown, hairline tables with mono tabular ranks, and the "Simulated data"
+ * label whenever any returned row is simulated. Fetch behavior unchanged.
  */
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { Link } from "react-router";
 import type { LeaderboardResponse } from "../../../shared/contracts";
-import { cx } from "../me/format";
-import {
-  Countdown,
-  ErrorState,
-  LoadingState,
-  PageShell,
-  Panel,
-  SimulatedBadge,
-} from "../me/ui";
+import { Chip, SimulatedBadge, buttonClass, cn } from "../../design";
+import { CountdownLabel, ErrorState, LoadingState, PageShell } from "../me/ui";
 
 type Tab = "students" | "colleges";
 
@@ -65,41 +59,31 @@ export default function LeaderboardPage() {
     <PageShell
       title="Leaderboard"
       subtitle="Qualified referrals decide the order. Check-in at the live workshop is what qualifies a referral."
+      topRight={data ? <CountdownLabel targetIso={data.workshopStartIso} /> : undefined}
     >
       {data ? (
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-[#DDE5F2] bg-white px-4 py-3">
-          <span className="text-sm">
-            {tab === "students" ? "Top 50 students" : "Colleges"} ·{" "}
+        <div className="mb-4 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 border-y border-hairline py-3">
+          <span className="text-body-sm text-ink-muted">
+            {tab === "students" ? "Top 50 students" : "Colleges by qualified referrals"}
+          </span>
+          <span className="font-mono text-mono-data text-ink-subtle">
             {formatWorkshop(data.workshopStartIso)}
           </span>
-          <Countdown targetIso={data.workshopStartIso} />
         </div>
       ) : null}
 
-      <div className="mb-4 grid grid-cols-2 gap-2" role="tablist" aria-label="Leaderboard type">
+      <div className="mb-4 flex flex-wrap gap-2" role="group" aria-label="Leaderboard type">
         {(["students", "colleges"] as const).map((value) => (
-          <button
-            key={value}
-            type="button"
-            role="tab"
-            aria-selected={tab === value}
-            onClick={() => setTab(value)}
-            className={cx(
-              "min-h-11 rounded-md border px-4 text-sm font-bold",
-              tab === value
-                ? "border-[#1F3A93] bg-[#1F3A93] text-white"
-                : "border-[#DDE5F2] bg-white text-[#2E333B]",
-            )}
-          >
+          <Chip key={value} selected={tab === value} onClick={() => setTab(value)}>
             {value === "students" ? "Students" : "Colleges"}
-          </button>
+          </Chip>
         ))}
       </div>
 
       {simulated ? (
-        <div className="mb-3 flex items-center gap-2">
+        <div className="mb-4 flex flex-wrap items-center gap-2">
           <SimulatedBadge />
-          <span className="text-xs">This board includes seeded demo rows.</span>
+          <span className="text-label text-ink-muted">This board includes seeded demo rows.</span>
         </div>
       ) : null}
 
@@ -110,7 +94,7 @@ export default function LeaderboardPage() {
           title="Could not load the leaderboard"
           message="The board is taking a break. Try again in a minute."
           action={
-            <Link to="/me" className="inline-flex min-h-11 items-center rounded-md bg-[#1F3A93] px-4 text-sm font-bold text-white">
+            <Link to="/me" className={buttonClass({ variant: "primary" })}>
               Back to my Launchpad
             </Link>
           }
@@ -118,70 +102,182 @@ export default function LeaderboardPage() {
       ) : null}
 
       {data && tab === "students" ? (
-        <Panel className="overflow-hidden p-0">
+        <Board>
           {(data.students ?? []).length === 0 ? (
-            <p className="p-4 text-sm">No referrals yet. The first check-ins will appear here.</p>
+            <p className="p-4 text-body-sm text-ink-muted">
+              No referrals yet. The first check-ins will appear here.
+            </p>
           ) : (
-            <table className="w-full border-collapse text-sm">
-              <thead>
-                <tr className="border-b border-[#DDE5F2] text-left text-xs text-[#2E333B]">
-                  <th className="px-3 py-2 font-bold">#</th>
-                  <th className="px-3 py-2 font-bold">Student</th>
-                  <th className="px-3 py-2 text-right font-bold">Qualified</th>
-                  <th className="px-3 py-2 text-right font-bold">Total</th>
-                </tr>
-              </thead>
-              <tbody>
+            <>
+              <ul className="divide-y divide-hairline md:hidden">
                 {(data.students ?? []).map((row) => (
-                  <tr key={`${row.rank}-${row.displayName}`} className="border-b border-[#DDE5F2] last:border-b-0">
-                    <td className="px-3 py-2 font-bold text-[#1F3A93]">{row.rank}</td>
-                    <td className="px-3 py-2">
-                      <span className="font-bold">{row.displayName}</span>
-                      <span className="block text-xs text-[#2E333B]">{row.collegeShort}</span>
-                    </td>
-                    <td className="px-3 py-2 text-right font-bold">{row.qualified}</td>
-                    <td className="px-3 py-2 text-right">{row.total}</td>
-                  </tr>
+                  <li key={`${row.rank}-${row.displayName}`} className="px-4 py-3">
+                    <div className="flex items-baseline gap-3">
+                      <span className="w-7 shrink-0 font-mono text-mono-data text-ink-subtle tabular-nums">
+                        {row.rank}
+                      </span>
+                      <span className="min-w-0 flex-1 truncate text-body-sm font-medium text-ink">
+                        {row.displayName}
+                      </span>
+                    </div>
+                    <p className="mt-0.5 truncate pl-10 text-label text-ink-subtle">
+                      {row.collegeShort}
+                    </p>
+                    <dl className="mt-2 space-y-1 border-t border-hairline pt-2 pl-10">
+                      <div className="flex items-baseline justify-between gap-3">
+                        <dt className="text-label text-ink-subtle">Qualified</dt>
+                        <dd className="font-mono text-mono-data text-ink tabular-nums">
+                          {row.qualified}
+                        </dd>
+                      </div>
+                      <div className="flex items-baseline justify-between gap-3">
+                        <dt className="text-label text-ink-subtle">Total referrals</dt>
+                        <dd className="font-mono text-mono-data text-ink-muted tabular-nums">
+                          {row.total}
+                        </dd>
+                      </div>
+                    </dl>
+                  </li>
                 ))}
-              </tbody>
-            </table>
+              </ul>
+              <table className="hidden w-full border-collapse text-left md:table">
+                <thead>
+                  <tr className="border-b border-hairline">
+                    <th className="px-4 py-2.5 text-label font-medium text-ink-subtle">#</th>
+                    <th className="px-4 py-2.5 text-label font-medium text-ink-subtle">Student</th>
+                    <th className="px-4 py-2.5 text-right text-label font-medium text-ink-subtle">
+                      Qualified
+                    </th>
+                    <th className="px-4 py-2.5 text-right text-label font-medium text-ink-subtle">
+                      Total
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(data.students ?? []).map((row) => (
+                    <tr
+                      key={`${row.rank}-${row.displayName}`}
+                      className="border-b border-hairline last:border-b-0"
+                    >
+                      <td className="px-4 py-2.5 font-mono text-mono-data text-ink-muted tabular-nums">
+                        {row.rank}
+                      </td>
+                      <td className="px-4 py-2.5">
+                        <span className="text-body-sm font-medium text-ink">
+                          {row.displayName}
+                        </span>
+                        <span className="block text-label text-ink-subtle">{row.collegeShort}</span>
+                      </td>
+                      <td className="px-4 py-2.5 text-right font-mono text-mono-data text-ink tabular-nums">
+                        {row.qualified}
+                      </td>
+                      <td className="px-4 py-2.5 text-right font-mono text-mono-data text-ink-muted tabular-nums">
+                        {row.total}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </>
           )}
-        </Panel>
+        </Board>
       ) : null}
 
       {data && tab === "colleges" ? (
-        <Panel className="overflow-hidden p-0">
+        <Board>
           {(data.colleges ?? []).length === 0 ? (
-            <p className="p-4 text-sm">No college rows yet.</p>
+            <p className="p-4 text-body-sm text-ink-muted">No college rows yet.</p>
           ) : (
-            <table className="w-full border-collapse text-sm">
-              <thead>
-                <tr className="border-b border-[#DDE5F2] text-left text-xs text-[#2E333B]">
-                  <th className="px-3 py-2 font-bold">#</th>
-                  <th className="px-3 py-2 font-bold">College</th>
-                  <th className="px-3 py-2 text-right font-bold">Regs</th>
-                  <th className="px-3 py-2 text-right font-bold">Qualified</th>
-                  <th className="px-3 py-2 text-right font-bold">Amb.</th>
-                </tr>
-              </thead>
-              <tbody>
+            <>
+              <ul className="divide-y divide-hairline md:hidden">
                 {(data.colleges ?? []).map((row) => (
-                  <tr key={`${row.rank}-${row.collegeId}`} className="border-b border-[#DDE5F2] last:border-b-0">
-                    <td className="px-3 py-2 font-bold text-[#1F3A93]">{row.rank}</td>
-                    <td className="px-3 py-2">
-                      <span className="font-bold">{row.shortName || row.name}</span>
-                    </td>
-                    <td className="px-3 py-2 text-right font-bold">{row.registrations}</td>
-                    <td className="px-3 py-2 text-right">{row.qualified}</td>
-                    <td className="px-3 py-2 text-right">{row.ambassadors}</td>
-                  </tr>
+                  <li key={`${row.rank}-${row.collegeId}`} className="px-4 py-3">
+                    <div className="flex items-baseline gap-3">
+                      <span className="w-7 shrink-0 font-mono text-mono-data text-ink-subtle tabular-nums">
+                        {row.rank}
+                      </span>
+                      <span className="min-w-0 flex-1 truncate text-body-sm font-medium text-ink">
+                        {row.shortName || row.name}
+                      </span>
+                    </div>
+                    <dl className="mt-2 space-y-1 border-t border-hairline pt-2 pl-10">
+                      <div className="flex items-baseline justify-between gap-3">
+                        <dt className="text-label text-ink-subtle">Registrations</dt>
+                        <dd className="font-mono text-mono-data text-ink tabular-nums">
+                          {row.registrations}
+                        </dd>
+                      </div>
+                      <div className="flex items-baseline justify-between gap-3">
+                        <dt className="text-label text-ink-subtle">Qualified</dt>
+                        <dd className="font-mono text-mono-data text-ink tabular-nums">
+                          {row.qualified}
+                        </dd>
+                      </div>
+                      <div className="flex items-baseline justify-between gap-3">
+                        <dt className="text-label text-ink-subtle">Ambassadors</dt>
+                        <dd className="font-mono text-mono-data text-ink-muted tabular-nums">
+                          {row.ambassadors}
+                        </dd>
+                      </div>
+                    </dl>
+                  </li>
                 ))}
-              </tbody>
-            </table>
+              </ul>
+              <table className="hidden w-full border-collapse text-left md:table">
+                <thead>
+                  <tr className="border-b border-hairline">
+                    <th className="px-4 py-2.5 text-label font-medium text-ink-subtle">#</th>
+                    <th className="px-4 py-2.5 text-label font-medium text-ink-subtle">College</th>
+                    <th className="px-4 py-2.5 text-right text-label font-medium text-ink-subtle">
+                      Regs
+                    </th>
+                    <th className="px-4 py-2.5 text-right text-label font-medium text-ink-subtle">
+                      Qualified
+                    </th>
+                    <th className="px-4 py-2.5 text-right text-label font-medium text-ink-subtle">
+                      Amb.
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(data.colleges ?? []).map((row) => (
+                    <tr
+                      key={`${row.rank}-${row.collegeId}`}
+                      className="border-b border-hairline last:border-b-0"
+                    >
+                      <td className="px-4 py-2.5 font-mono text-mono-data text-ink-muted tabular-nums">
+                        {row.rank}
+                      </td>
+                      <td className="px-4 py-2.5 text-body-sm font-medium text-ink">
+                        {row.shortName || row.name}
+                      </td>
+                      <td className="px-4 py-2.5 text-right font-mono text-mono-data text-ink tabular-nums">
+                        {row.registrations}
+                      </td>
+                      <td className="px-4 py-2.5 text-right font-mono text-mono-data text-ink tabular-nums">
+                        {row.qualified}
+                      </td>
+                      <td className="px-4 py-2.5 text-right font-mono text-mono-data text-ink-muted tabular-nums">
+                        {row.ambassadors}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </>
           )}
-        </Panel>
+        </Board>
       ) : null}
     </PageShell>
+  );
+}
+
+/** Hairline table frame; rows carry their own dividers. */
+function Board({ children }: { children: ReactNode }) {
+  return (
+    <section className={cn("overflow-hidden rounded-panel border border-hairline bg-surface-1")}>
+      {children}
+    </section>
   );
 }
 

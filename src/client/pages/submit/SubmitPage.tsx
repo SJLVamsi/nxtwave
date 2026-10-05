@@ -1,6 +1,11 @@
+/**
+ * WS7 — Project submission + rubric result (PRD M9).
+ * Flight Deck restyle (DESIGN.md §8); request/response behavior unchanged.
+ */
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { Link, useSearchParams } from "react-router";
 import type { Evaluation, SubmissionResponse } from "../../../shared/contracts";
+import { Button, Input, buttonClass, cn, fieldControlClass, fieldLabelClass } from "../../design";
 
 const RUBRIC_LABELS: { key: keyof Evaluation["breakdown"]; label: string; max: number }[] = [
   { key: "worksLive", label: "Works live", max: 30 },
@@ -101,167 +106,189 @@ export default function SubmitPage() {
 
   if (result) {
     return (
-      <main className="mx-auto min-h-screen max-w-xl px-5 py-10 text-[#2E333B]">
-        <p className="text-sm font-bold tracking-wide text-[#1F3A93]">Ship60 · project check</p>
-        <h1 className="mt-1 text-2xl font-bold">
-          {result.status === "evaluated" ? "Your project scored" : "Project saved"}
-        </h1>
-        {result.status === "evaluated" && result.evaluation && (
-          <>
-            <p className="mt-3 text-5xl font-bold text-[#1F3A93]">
-              {result.evaluation.score}
-              <span className="text-xl text-[#5A6472]">/100</span>
-            </p>
-            <ul className="mt-5 space-y-2">
-              {RUBRIC_LABELS.map(({ key, label, max }) => (
-                <li key={key} className="text-sm">
-                  <div className="flex justify-between">
-                    <span>{label}</span>
-                    <span className="font-semibold">
-                      {result.evaluation!.breakdown[key]}/{max}
-                    </span>
-                  </div>
-                  <div className="mt-1 h-1.5 w-full rounded bg-[#DDE5F2]">
-                    <div
-                      className="h-1.5 rounded bg-[#1F3A93]"
-                      style={{ width: `${Math.round((result.evaluation!.breakdown[key] / max) * 100)}%` }}
-                    />
-                  </div>
-                </li>
-              ))}
-            </ul>
-            <section className="mt-6 rounded-lg border border-[#DDE5F2] bg-white p-4">
-              <h2 className="text-sm font-bold">What worked</h2>
-              <ul className="mt-2 list-disc space-y-1 pl-5 text-sm">
-                {result.evaluation.strengths.map((item) => (
-                  <li key={item}>{item}</li>
-                ))}
+      <main className="min-h-screen bg-canvas font-sans text-ink">
+        <div className="mx-auto w-full max-w-xl px-4 pb-[calc(4rem+env(safe-area-inset-bottom))] pt-10">
+          <h1 className="font-display text-display-lg text-ink text-balance">
+            {result.status === "evaluated" ? "Your project scored" : "Project saved"}
+          </h1>
+          {result.status === "evaluated" && result.evaluation ? (
+            <>
+              <p className="mt-5 font-mono text-mono-stat text-ink tabular-nums">
+                {result.evaluation.score}
+                <span className="text-title text-ink-subtle">/100</span>
+              </p>
+              <ul className="mt-6 divide-y divide-hairline border-y border-hairline">
+                {RUBRIC_LABELS.map(({ key, label, max }) => {
+                  const value = result.evaluation!.breakdown[key];
+                  const pct = Math.round((value / max) * 100);
+                  return (
+                    <li key={key} className="py-3">
+                      <div className="flex items-baseline justify-between gap-3">
+                        <span className="text-body-sm text-ink-muted">{label}</span>
+                        <span className="shrink-0 font-mono text-mono-data text-ink tabular-nums">
+                          {value}/{max}
+                        </span>
+                      </div>
+                      <div className="mt-2 h-0.5 w-full bg-surface-3">
+                        <div className="h-0.5 bg-ink-muted" style={{ width: `${pct}%` }} />
+                      </div>
+                    </li>
+                  );
+                })}
               </ul>
-            </section>
-            <section className="mt-4 rounded-lg border border-[#DDE5F2] bg-white p-4">
-              <h2 className="text-sm font-bold">Improve next</h2>
-              <ul className="mt-2 list-disc space-y-1 pl-5 text-sm">
-                {result.evaluation.improvements.map((item) => (
-                  <li key={item}>{item}</li>
-                ))}
-              </ul>
-            </section>
-            <p className="mt-4 rounded-lg bg-[#FFE45C]/40 p-4 text-sm">
-              <strong>Next feature:</strong> {result.evaluation.nextFeature}
+              <section className="mt-6 rounded-panel border border-hairline bg-surface-1 p-4">
+                <h2 className="text-title text-ink">What worked</h2>
+                <ul className="mt-3 space-y-2 text-body-sm leading-relaxed text-ink-muted">
+                  {result.evaluation.strengths.map((item) => (
+                    <li key={item}>{item}</li>
+                  ))}
+                </ul>
+              </section>
+              <section className="mt-3 rounded-panel border border-hairline bg-surface-1 p-4">
+                <h2 className="text-title text-ink">Improve next</h2>
+                <ul className="mt-3 space-y-2 text-body-sm leading-relaxed text-ink-muted">
+                  {result.evaluation.improvements.map((item) => (
+                    <li key={item}>{item}</li>
+                  ))}
+                </ul>
+              </section>
+              <p className="mt-3 rounded-panel border border-hairline bg-surface-2 p-4 text-body-sm leading-relaxed text-ink-muted">
+                <strong className="font-medium text-ink">Next feature:</strong>{" "}
+                {result.evaluation.nextFeature}
+              </p>
+            </>
+          ) : null}
+          {result.status === "manual" || result.status === "failed" ? (
+            <p className="mt-4 rounded-panel border border-hairline bg-surface-1 p-4 text-body-sm leading-relaxed text-ink-muted">
+              Your project was saved but the AI evaluator could not score it right now (it may be
+              offline or the live link did not respond). Nothing is lost — it is queued for manual
+              review.
             </p>
-          </>
-        )}
-        {(result.status === "manual" || result.status === "failed") && (
-          <p className="mt-4 rounded-lg border border-[#DDE6F2] bg-white p-4 text-sm">
-            Your project was saved but the AI evaluator could not score it right now (it may be offline or the live
-            link did not respond). Nothing is lost — it is queued for manual review.
-          </p>
-        )}
-        <div className="mt-6 flex flex-col gap-3">
-          <a
-            className="rounded-lg bg-[#1F3A93] px-4 py-3 text-center font-bold text-white"
-            href={`https://wa.me/?text=${encodeURIComponent(shareText)}`}
-            target="_blank"
-            rel="noreferrer"
-          >
-            Share on WhatsApp
-          </a>
-          <a
-            className="rounded-lg border border-[#1F3A93] px-4 py-3 text-center font-bold text-[#1F3A93]"
-            href={result.shippedCardPath}
-            target="_blank"
-            rel="noreferrer"
-          >
-            I shipped it — open my share card
-          </a>
-          <Link className="text-center text-sm font-semibold text-[#1F3A93]" to={token ? `/me?t=${token}` : "/me"}>
-            Back to my Launchpad
-          </Link>
+          ) : null}
+          <div className="mt-6 flex flex-col gap-3">
+            <a
+              className={buttonClass({ variant: "primary", size: "lg", fullWidth: true })}
+              href={`https://wa.me/?text=${encodeURIComponent(shareText)}`}
+              target="_blank"
+              rel="noreferrer"
+            >
+              Share on WhatsApp
+            </a>
+            <a
+              className={buttonClass({ variant: "secondary", size: "lg", fullWidth: true })}
+              href={result.shippedCardPath}
+              target="_blank"
+              rel="noreferrer"
+            >
+              I shipped it — open my share card
+            </a>
+            <Link
+              className="rounded-sm text-center text-body-sm text-ink-muted underline decoration-hairline-strong underline-offset-4 transition-colors duration-150 hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-signal"
+              to={token ? `/me?t=${token}` : "/me"}
+            >
+              Back to my Launchpad
+            </Link>
+          </div>
+          {result.status === "evaluated" ? (
+            <p className="mt-6 text-label leading-relaxed text-ink-subtle">
+              Share card image arrives with the next deploy of the OG service. The link above always
+              works.
+            </p>
+          ) : null}
         </div>
-        {result.status === "evaluated" && (
-          <p className="mt-6 text-xs text-[#5A6472]">
-            Share card image arrives with the next deploy of the OG service. The link above always works.
-          </p>
-        )}
       </main>
     );
   }
 
   return (
-    <main className="mx-auto min-h-screen max-w-xl px-5 py-10 text-[#2E333B]">
-      <p className="text-sm font-bold tracking-wide text-[#1F3A93]">Ship60 · project check</p>
-      <h1 className="mt-1 text-2xl font-bold">Submit your project</h1>
-      <p className="mt-2 text-sm text-[#5A6472]">
-        Paste the link you deployed and your GitHub repo. We check that the page is live and score it against the
-        workshop rubric.
-      </p>
-
-      {needsAuth && (
-        <p className="mt-4 rounded-lg border border-[#D7263D] bg-white p-3 text-sm">
-          Open your Launchpad first, then come back.{" "}
-          <Link className="font-semibold text-[#1F3A93]" to="/me">
-            Go to my Launchpad
-          </Link>
+    <main className="min-h-screen bg-canvas font-sans text-ink">
+      <div className="mx-auto w-full max-w-xl px-4 pb-[calc(4rem+env(safe-area-inset-bottom))] pt-10">
+        <h1 className="font-display text-display-lg text-ink text-balance">Submit your project</h1>
+        <p className="mt-3 max-w-[60ch] text-body-sm leading-relaxed text-ink-muted">
+          Paste the link you deployed and your GitHub repo. We check that the page is live and score
+          it against the workshop rubric.
         </p>
-      )}
-      {rateLimited && (
-        <p className="mt-4 rounded-lg border border-[#D7263D] bg-white p-3 text-sm">
-          You have submitted 3 projects this hour. Try again a little later.
-        </p>
-      )}
-      {error && (
-        <p className="mt-4 rounded-lg border border-[#D7263D] bg-white p-3 text-sm">{error}</p>
-      )}
 
-      <form className="mt-6 space-y-4" onSubmit={onSubmit}>
-        <label className="block">
-          <span className="text-sm font-semibold">Deployed project URL</span>
-          <input
-            className="mt-1 w-full rounded-lg border border-[#DDE5F2] bg-white px-3 py-3 text-base"
-            type="url"
-            inputMode="url"
-            required
-            placeholder="https://my-project.example.com"
-            value={liveUrl}
-            onChange={(event) => setLiveUrl(event.target.value)}
-          />
-        </label>
-        <label className="block">
-          <span className="text-sm font-semibold">GitHub repository (optional)</span>
-          <input
-            className="mt-1 w-full rounded-lg border border-[#DDE5F2] bg-white px-3 py-3 text-base"
-            type="url"
-            inputMode="url"
-            placeholder="https://github.com/you/project"
-            value={repoUrl}
-            onChange={(event) => setRepoUrl(event.target.value)}
-          />
-        </label>
-        <label className="block">
-          <span className="text-sm font-semibold">What does it do? (2 lines)</span>
-          <textarea
-            className="mt-1 w-full rounded-lg border border-[#DDE5F2] bg-white px-3 py-3 text-base"
-            required
-            minLength={10}
-            maxLength={600}
-            rows={3}
-            placeholder="Who is it for and what problem does it solve? What does the AI do?"
-            value={description}
-            onChange={(event) => setDescription(event.target.value)}
-          />
-          <span className="mt-1 block text-xs text-[#5A6472]">{description.trim().length}/600</span>
-        </label>
-        <button
-          className="w-full rounded-lg bg-[#1F3A93] px-4 py-3 font-bold text-white disabled:opacity-60"
-          type="submit"
-          disabled={submitting}
-        >
-          {submitting ? "Checking your project…" : "Check my project"}
-        </button>
-      </form>
-      <p className="mt-4 text-xs text-[#5A6472]">
-        We fetch your page and README once. Fetched content is treated as untrusted data and never as instructions.
-      </p>
+        {needsAuth ? (
+          <p
+            role="alert"
+            className="mt-5 border-y border-hairline py-3 text-body-sm leading-relaxed text-danger"
+          >
+            Open your Launchpad first, then come back.{" "}
+            <Link className="font-medium underline decoration-danger/60 underline-offset-4" to="/me">
+              Go to my Launchpad
+            </Link>
+          </p>
+        ) : null}
+        {rateLimited ? (
+          <p
+            role="alert"
+            className="mt-5 border-y border-hairline py-3 text-body-sm leading-relaxed text-danger"
+          >
+            You have submitted 3 projects this hour. Try again a little later.
+          </p>
+        ) : null}
+        {error ? (
+          <p
+            role="alert"
+            className="mt-5 border-y border-hairline py-3 text-body-sm leading-relaxed text-danger"
+          >
+            {error}
+          </p>
+        ) : null}
+
+        <section className="mt-6 rounded-panel border border-hairline bg-surface-1 p-4">
+          <form className="space-y-4" onSubmit={onSubmit}>
+            <Input
+              label="Deployed project URL"
+              type="url"
+              inputMode="url"
+              autoComplete="url"
+              spellCheck={false}
+              required
+              placeholder="https://my-project.example.com"
+              value={liveUrl}
+              onChange={(event) => setLiveUrl(event.target.value)}
+            />
+            <Input
+              label="GitHub repository (optional)"
+              type="url"
+              inputMode="url"
+              autoComplete="url"
+              spellCheck={false}
+              placeholder="https://github.com/you/project"
+              value={repoUrl}
+              onChange={(event) => setRepoUrl(event.target.value)}
+            />
+            <label className="block" htmlFor="submit-description">
+              <span className={cn(fieldLabelClass, "block")}>What does it do? (2 lines)</span>
+              <textarea
+                id="submit-description"
+                name="description"
+                className={cn(fieldControlClass(), "mt-1.5 min-h-24 resize-y")}
+                required
+                minLength={10}
+                maxLength={600}
+                rows={3}
+                autoComplete="off"
+                placeholder="Who is it for and what problem does it solve? What does the AI do?"
+                value={description}
+                onChange={(event) => setDescription(event.target.value)}
+              />
+              <span className="mt-1.5 block font-mono text-label text-ink-subtle tabular-nums">
+                {description.trim().length}/600
+              </span>
+            </label>
+            <Button variant="primary" size="lg" fullWidth type="submit" loading={submitting}>
+              {submitting ? "Checking your project…" : "Check my project"}
+            </Button>
+          </form>
+        </section>
+        <p className="mt-4 text-label leading-relaxed text-ink-subtle">
+          We fetch your page and README once. Fetched content is treated as untrusted data and never
+          as instructions.
+        </p>
+      </div>
     </main>
   );
 }
