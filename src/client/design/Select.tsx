@@ -34,7 +34,7 @@ export function Select({
       <label htmlFor={selectId} className={fieldLabelClass}>
         {label}
         {required ? (
-          <span className="text-margin" aria-hidden="true">
+          <span className="text-ink-subtle" aria-hidden="true">
             {" "}
             *
           </span>

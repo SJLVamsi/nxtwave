@@ -126,6 +126,7 @@ export function Typeahead({
           type="text"
           role="combobox"
           autoComplete="off"
+          spellCheck={false}
           aria-expanded={showList}
           aria-controls={listboxId}
           aria-autocomplete="list"
@@ -144,13 +145,13 @@ export function Typeahead({
           }}
           onFocus={() => setOpen(true)}
           onKeyDown={onKeyDown}
-          className={cn(fieldControlClass(error), "pr-9")}
+          className={cn(fieldControlClass(error), "pr-11")}
         />
         {selected ? (
           <button
             type="button"
             aria-label="Change selection"
-            className="absolute top-1/2 right-2 -translate-y-1/2 rounded p-1.5 text-graphite/70 hover:text-graphite"
+            className="absolute top-1/2 right-1 grid h-9 w-9 -translate-y-1/2 place-items-center rounded-control text-ink-subtle transition-colors duration-[var(--dur-ui)] ease-[var(--ease-out)] hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-signal"
             onClick={() => {
               onClearSelection();
               setQuery("");
@@ -162,7 +163,7 @@ export function Typeahead({
               <path
                 d="m4 4 8 8M12 4l-8 8"
                 stroke="currentColor"
-                strokeWidth="1.8"
+                strokeWidth="1.7"
                 strokeLinecap="round"
               />
             </svg>
@@ -173,15 +174,15 @@ export function Typeahead({
             id={listboxId}
             role="listbox"
             aria-label={label}
-            className="absolute z-20 mt-1 max-h-64 w-full overflow-auto rounded-lg border border-rule bg-surface py-1 shadow-lg"
+            className="absolute z-20 mt-1 max-h-64 w-full overflow-auto rounded-panel border border-hairline bg-surface-2 py-1 shadow-[0_16px_40px_rgba(0,0,0,0.5)]"
           >
             {loading ? (
-              <li className="px-3 py-2 text-sm text-graphite/70" aria-live="polite">
+              <li className="px-3 py-2.5 text-body-sm text-ink-subtle" aria-live="polite">
                 Searching colleges…
               </li>
             ) : null}
             {!loading && allOptions.length === 0 ? (
-              <li className="px-3 py-2 text-sm text-graphite/70">{emptyText}</li>
+              <li className="px-3 py-2.5 text-body-sm text-ink-subtle">{emptyText}</li>
             ) : null}
             {allOptions.map((option, index) => (
               <li
@@ -190,16 +191,17 @@ export function Typeahead({
                 role="option"
                 aria-selected={selected?.id === option.id}
                 className={cn(
-                  "cursor-pointer px-3 py-2 text-sm",
-                  index === activeIndex ? "bg-ink/10" : "hover:bg-ink/5",
+                  "min-h-11 cursor-pointer px-3 py-2.5 text-body-sm",
+                  index === activeIndex ? "bg-surface-3" : "",
+                  selected?.id === option.id ? "text-signal" : "text-ink",
                 )}
                 onMouseDown={(event) => event.preventDefault()}
                 onMouseEnter={() => setActiveIndex(index)}
                 onClick={() => commit(option)}
               >
-                <span className="block font-bold text-graphite">{option.label}</span>
+                <span className="block font-medium text-ink">{option.label}</span>
                 {option.sublabel ? (
-                  <span className="block text-xs text-graphite/70">{option.sublabel}</span>
+                  <span className="block text-label text-ink-subtle">{option.sublabel}</span>
                 ) : null}
               </li>
             ))}

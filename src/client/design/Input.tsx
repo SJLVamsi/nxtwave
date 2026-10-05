@@ -19,7 +19,7 @@ export function Input({ label, hint, error, leading, id, required, ...rest }: In
       <label htmlFor={inputId} className={fieldLabelClass}>
         {label}
         {required ? (
-          <span className="text-margin" aria-hidden="true">
+          <span className="text-ink-subtle" aria-hidden="true">
             {" "}
             *
           </span>
@@ -27,7 +27,7 @@ export function Input({ label, hint, error, leading, id, required, ...rest }: In
       </label>
       <div className={cn("flex", leading ? "items-stretch" : "")}>
         {leading ? (
-          <span className="flex min-h-11 items-center rounded-l-lg border border-r-0 border-rule bg-rule/40 px-3 text-base text-graphite">
+          <span className="flex min-h-11 items-center rounded-l-control border border-r-0 border-hairline bg-surface-2 px-3 font-mono text-mono-data text-ink-muted">
             {leading}
           </span>
         ) : null}

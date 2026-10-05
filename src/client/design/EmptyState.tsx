@@ -8,17 +8,20 @@ export interface EmptyStateProps {
   className?: string;
 }
 
+/** One line of copy and one action; no illustrations (DESIGN.md §5). */
 export function EmptyState({ title, body, action, className }: EmptyStateProps) {
   return (
     <div
       className={cn(
-        "rounded-xl border border-dashed border-rule bg-surface/60 px-5 py-8 text-center",
+        "rounded-panel border border-hairline bg-surface-1 px-5 py-8 text-center",
         className,
       )}
     >
-      <p className="font-display text-lg font-bold text-graphite">{title}</p>
-      {body ? <p className="mx-auto mt-1 max-w-sm text-sm text-graphite/70">{body}</p> : null}
-      {action ? <div className="mt-4 flex justify-center">{action}</div> : null}
+      <p className="text-title text-ink text-balance">{title}</p>
+      {body ? (
+        <p className="mx-auto mt-2 max-w-[42ch] text-body-sm text-ink-muted">{body}</p>
+      ) : null}
+      {action ? <div className="mt-5 flex justify-center">{action}</div> : null}
     </div>
   );
 }

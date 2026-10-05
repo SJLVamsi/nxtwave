@@ -23,12 +23,12 @@ export function FieldMessages({
   return (
     <>
       {hint ? (
-        <p id={`${id}-hint`} className="text-sm text-graphite/70">
+        <p id={`${id}-hint`} className="text-body-sm text-ink-subtle">
           {hint}
         </p>
       ) : null}
       {error ? (
-        <p id={`${id}-error`} role="alert" className="text-sm font-bold text-margin">
+        <p id={`${id}-error`} role="alert" className="text-body-sm text-danger">
           {error}
         </p>
       ) : null}
@@ -36,14 +36,15 @@ export function FieldMessages({
   );
 }
 
-export const fieldLabelClass = "block text-sm font-bold text-graphite";
+export const fieldLabelClass = "block text-label text-ink-muted";
 
 export function fieldControlClass(error?: string | null, className?: string): string {
   return cn(
-    "min-h-11 w-full rounded-lg border bg-surface px-3 py-2 font-body text-base text-graphite",
-    "placeholder:text-graphite/70 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ink",
-    "disabled:cursor-not-allowed disabled:opacity-60",
-    error ? "border-margin" : "border-rule",
+    "min-h-11 w-full rounded-control border bg-surface-1 px-3 py-2 font-sans text-base text-ink",
+    "placeholder:text-ink-subtle",
+    "focus-visible:border-signal focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-signal/40",
+    "disabled:cursor-not-allowed disabled:opacity-45",
+    error ? "border-danger" : "border-hairline hover:border-hairline-strong",
     className,
   );
 }

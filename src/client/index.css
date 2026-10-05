@@ -2,35 +2,117 @@
 @import "./design/tokens.css";
 
 /*
- * Design tokens (PRD §5) live in src/client/design/tokens.css (WS3).
- * This file wires Tailwind and keeps neutral fallbacks for any surface that
- * has not adopted the token utilities yet.
+ * Ship60 base layer. The world is dark ("Flight Deck", DESIGN.md §1): near-black
+ * canvas, Geist, hairline chrome, one signal accent. Theme tokens live in
+ * src/client/design/tokens.css — this file only sets the browser surfaces the
+ * design system does not draw: scrollbars, selection, caret, focus, zoom.
  */
-
-:root {
-  color-scheme: light dark;
-}
 
 html {
   -webkit-text-size-adjust: 100%;
+  color-scheme: dark;
+  background-color: var(--canvas);
+  scroll-behavior: smooth;
+  scroll-padding-top: 4.5rem;
 }
 
 body {
   margin: 0;
-  font-family:
-    "Atkinson Hyperlegible", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  background: #fbfcfe;
-  color: #2e333b;
+  min-height: 100vh;
+  background-color: var(--canvas);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-size: 1rem;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
 }
 
-@media (prefers-color-scheme: dark) {
-  body {
-    background: #12151c;
-    color: #e6e9f0;
-  }
+::selection {
+  background: var(--signal);
+  color: var(--signal-ink);
+}
+
+:root {
+  accent-color: var(--signal);
+  caret-color: var(--signal);
+  -webkit-tap-highlight-color: color-mix(in oklab, var(--signal) 22%, transparent);
 }
 
 :focus-visible {
-  outline: 3px solid #1f3a93;
+  outline: 2px solid var(--signal);
   outline-offset: 2px;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--ink-subtle);
+  opacity: 1;
+}
+
+button,
+a,
+input,
+select,
+textarea,
+summary {
+  touch-action: manipulation;
+}
+
+summary::-webkit-details-marker {
+  display: none;
+}
+
+/* Browser chrome belongs to the palette (craft floor, "browser surfaces"). */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--surface-3) transparent;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--surface-3);
+  border: 2px solid var(--canvas);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--hairline-strong);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-delay: 0ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  /* Reduced motion keeps the fade, removes the clip/transform reveal. */
+  .s60-written {
+    animation: written-fade 220ms ease both !important;
+  }
+
+  .s60-step,
+  .s60-caret {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
 }

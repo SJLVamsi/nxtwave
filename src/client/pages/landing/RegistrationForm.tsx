@@ -122,9 +122,7 @@ export function RegistrationForm({ idea, refCode, shareVariant, utm }: Registrat
             const api: TurnstileApi = window.turnstile;
             turnstileWidgetRef.current = api.render(turnstileContainerRef.current, {
               sitekey: TURNSTILE_SITE_KEY,
-              theme: window.matchMedia("(prefers-color-scheme: dark)").matches
-                ? "dark"
-                : "light",
+              theme: "dark",
               size: "flexible",
               callback: (token) => {
                 setTurnstileToken(token);
@@ -286,10 +284,8 @@ export function RegistrationForm({ idea, refCode, shareVariant, utm }: Registrat
   if (success) {
     return (
       <div className="max-w-xl" aria-live="polite">
-        <h3 className="font-display font-stretch-expanded text-2xl font-black text-graphite">
-          Seat {success.seatNo} is yours
-        </h3>
-        <p className="mt-2 text-graphite/80">
+        <h3 className="text-title text-ink">Seat {success.seatNo} is yours</h3>
+        <p className="mt-2 text-body text-ink-muted">
           {success.isReturning
             ? "Welcome back — your seat was already saved. Taking you to your Launchpad."
             : "We saved your seat and your project. Taking you to your Launchpad."}
@@ -316,10 +312,8 @@ export function RegistrationForm({ idea, refCode, shareVariant, utm }: Registrat
   if (duplicateUrl !== undefined) {
     return (
       <div className="max-w-xl" role="alert">
-        <h3 className="font-display font-stretch-expanded text-2xl font-black text-graphite">
-          You&rsquo;re already registered
-        </h3>
-        <p className="mt-2 text-graphite/80">
+        <h3 className="text-title text-ink">You&rsquo;re already registered</h3>
+        <p className="mt-2 text-body text-ink-muted">
           This email or WhatsApp number already has a seat. If this is you, open your Launchpad —
           your browser remembers you.
         </p>
@@ -335,11 +329,9 @@ export function RegistrationForm({ idea, refCode, shareVariant, utm }: Registrat
 
   return (
     <div className="max-w-xl">
-      <div className="rounded-xl border border-rule bg-surface px-5 py-6 sm:px-6">
-        <h3 className="font-display font-stretch-expanded text-2xl font-black text-graphite">
-          Save my seat
-        </h3>
-        <p className="mt-2 text-sm text-graphite/75">
+      <div className="rounded-panel border border-hairline bg-surface-1 px-5 py-6 sm:px-6">
+        <h3 className="text-title text-ink">Your details</h3>
+        <p className="mt-2 text-body-sm text-ink-muted">
           {idea
             ? `Your project: ${idea.title}`
             : "Your project gets picked in the first five minutes — you can also tap the chips above first."}
@@ -376,6 +368,7 @@ export function RegistrationForm({ idea, refCode, shareVariant, utm }: Registrat
             label="Email"
             type="email"
             inputMode="email"
+            spellCheck={false}
             value={email}
             onChange={(event) => {
               setEmail(event.target.value);
@@ -488,7 +481,7 @@ export function RegistrationForm({ idea, refCode, shareVariant, utm }: Registrat
           <div>
             <label
               htmlFor="reg-consent"
-              className="flex items-start gap-3 rounded-lg border border-rule bg-paper/60 px-3 py-3"
+              className="flex items-start gap-3 rounded-control border border-hairline bg-surface-2/60 px-3 py-3"
             >
               <input
                 id="reg-consent"
@@ -501,13 +494,13 @@ export function RegistrationForm({ idea, refCode, shareVariant, utm }: Registrat
                 }}
                 aria-invalid={errors.consent ? true : undefined}
                 aria-describedby={errors.consent ? "reg-consent-error" : undefined}
-                className="mt-0.5 h-5 w-5 shrink-0 accent-ink"
+                className="mt-0.5 h-5 w-5 shrink-0 accent-signal"
                 required
               />
-              <span className="text-sm leading-6 text-graphite/80">{CONSENT_TEXT}</span>
+              <span className="text-body-sm text-ink-muted">{CONSENT_TEXT}</span>
             </label>
             {errors.consent ? (
-              <p id="reg-consent-error" role="alert" className="mt-1.5 text-sm font-bold text-margin">
+              <p id="reg-consent-error" role="alert" className="mt-1.5 text-body-sm text-danger">
                 {errors.consent}
               </p>
             ) : null}
@@ -520,7 +513,7 @@ export function RegistrationForm({ idea, refCode, shareVariant, utm }: Registrat
             aria-label="Human verification"
           >
             {turnstileState === "error" ? (
-              <p className="text-sm text-graphite/70">
+              <p className="text-body-sm text-ink-subtle">
                 Verification couldn&rsquo;t load. You can still submit — we&rsquo;ll double-check
                 server-side, or refresh if it keeps failing.
               </p>
@@ -530,11 +523,11 @@ export function RegistrationForm({ idea, refCode, shareVariant, utm }: Registrat
           {submitError ? (
             <div
               role="alert"
-              className="rounded-lg border border-margin/60 bg-margin/5 px-3 py-3 text-sm font-bold text-margin"
+              className="rounded-control border border-danger/50 bg-danger/[0.08] px-3 py-3 text-body-sm text-danger"
             >
               {submitError.message}
               {submitError.code === "RATE_LIMITED" ? (
-                <span className="mt-1 block font-normal text-graphite/75">
+                <span className="mt-1 block text-ink-muted">
                   Your seat isn&rsquo;t lost — wait a few minutes and try again.
                 </span>
               ) : null}
@@ -542,9 +535,9 @@ export function RegistrationForm({ idea, refCode, shareVariant, utm }: Registrat
           ) : null}
 
           <Button type="submit" size="lg" fullWidth loading={submitting} data-testid="register-submit">
-            {submitting ? "Saving your seat…" : "Save my seat"}
+            Save my seat
           </Button>
-          <p className="text-center text-xs text-graphite/70">
+          <p className="text-center text-label text-ink-subtle">
             By saving your seat you agree to the consent note above. We never post on your behalf.
           </p>
         </form>

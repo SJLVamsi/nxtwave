@@ -1,22 +1,28 @@
 import type { ButtonHTMLAttributes } from "react";
 import { cn } from "./cn";
 
-export type ButtonVariant = "primary" | "secondary" | "quiet";
+export type ButtonVariant = "primary" | "secondary" | "ghost" | "danger" | "quiet";
 export type ButtonSize = "md" | "lg";
 
 const base =
-  "inline-flex items-center justify-center gap-2 font-body font-bold transition-colors disabled:cursor-not-allowed disabled:opacity-55";
+  "relative inline-flex items-center justify-center gap-2 rounded-control font-sans font-medium " +
+  "transition-[transform,background-color,border-color,color,opacity] duration-[var(--dur-ui)] ease-[var(--ease-out)] " +
+  "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-signal " +
+  "enabled:active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-45";
 
 const sizes: Record<ButtonSize, string> = {
-  md: "min-h-11 rounded-lg px-4 text-[0.95rem]",
-  lg: "min-h-13 rounded-xl px-5 text-base",
+  md: "min-h-11 px-4 text-[0.9375rem]",
+  lg: "min-h-13 px-5 text-body",
 };
 
 const variants: Record<ButtonVariant, string> = {
-  primary: "bg-ink text-paper hover:opacity-90 active:opacity-80",
-  secondary: "border border-ink/40 text-ink hover:bg-ink/5 active:bg-ink/10",
-  quiet:
-    "text-ink underline decoration-ink/40 underline-offset-4 hover:decoration-ink",
+  primary: "bg-signal text-signal-ink hover:bg-signal/85",
+  secondary:
+    "border border-hairline bg-surface-2 text-ink hover:border-hairline-strong hover:bg-surface-3",
+  ghost: "text-ink-muted hover:bg-surface-2 hover:text-ink",
+  danger: "bg-danger text-signal-ink hover:bg-danger/85",
+  /** @deprecated use `ghost`; kept so existing pages keep compiling. */
+  quiet: "text-ink-muted underline decoration-hairline-strong underline-offset-4 hover:text-ink",
 };
 
 /**
@@ -59,18 +65,24 @@ export function Button({
       aria-busy={loading || undefined}
       {...rest}
     >
-      {loading ? <Spinner /> : null}
-      {children}
+      <span className={cn("inline-flex items-center gap-2", loading && "invisible")}>
+        {children}
+      </span>
+      {loading ? (
+        <span className="absolute inset-0 grid place-items-center">
+          <Spinner />
+        </span>
+      ) : null}
     </button>
   );
 }
 
-export function Spinner() {
+export function Spinner({ className }: { className?: string } = {}) {
   return (
     <svg
       aria-hidden="true"
       viewBox="0 0 16 16"
-      className="h-4 w-4 animate-spin motion-reduce:animate-none"
+      className={cn("h-4 w-4 animate-spinner motion-reduce:animate-none", className)}
       fill="none"
     >
       <circle cx="8" cy="8" r="6.5" stroke="currentColor" strokeOpacity="0.3" strokeWidth="3" />

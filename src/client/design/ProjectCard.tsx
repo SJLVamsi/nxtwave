@@ -8,72 +8,80 @@ export interface ProjectCardProps {
   className?: string;
 }
 
+/**
+ * The hero object (DESIGN.md §5): surface-1 panel, mono meta row, display
+ * title, three numbered steps, tools as chips. The one authored moment is the
+ * title revealing behind a mono caret — clip-path + opacity over 320ms.
+ */
 export function ProjectCard({ idea, writing = true, className }: ProjectCardProps) {
-  const lineClass = writing ? "animate-written" : undefined;
-  const delay = (index: number) =>
-    writing ? { animationDelay: `${140 + index * 110}ms` } : undefined;
+  const meta = [idea.branch, idea.interest, "60 MIN"];
 
   return (
     <article
       data-testid="project-card"
-      className={cn(
-        "relative overflow-hidden rounded-xl border border-rule bg-surface shadow-[0_1px_2px_rgba(46,51,59,0.08)]",
-        className,
-      )}
+      className={cn("overflow-hidden rounded-panel border border-hairline bg-surface-1", className)}
       aria-label={`Project preview: ${idea.title}`}
     >
-      <div className="ruled absolute inset-0" aria-hidden="true" />
-      <div className="absolute inset-y-0 left-10 w-px bg-rule sm:left-12" aria-hidden="true" />
-      <div className="relative px-5 py-5 pl-14 sm:px-7 sm:pl-16">
-        <p className="text-sm font-bold text-graphite/70">The project you&rsquo;ll build</p>
-        <h3
-          className={cn(
-            "mt-2 font-display font-stretch-expanded text-2xl leading-8 font-black text-graphite",
-            lineClass,
-          )}
-          style={delay(0)}
-        >
-          <span className="box-decoration-clone bg-highlight px-1">{idea.title}</span>
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 border-b border-hairline px-4 py-3 font-mono text-mono-data text-ink-subtle sm:px-5">
+        {meta.map((part, index) => (
+          <span key={part} className="flex items-center gap-2">
+            {index > 0 ? (
+              <span aria-hidden="true" className="text-hairline-strong">
+                ·
+              </span>
+            ) : null}
+            <span className={index === 0 ? "text-ink-muted" : undefined}>{part}</span>
+          </span>
+        ))}
+      </div>
+
+      <div className="px-4 py-5 sm:px-5">
+        <h3 className="text-title text-ink text-balance">
+          <span className={cn("inline-block", writing && "s60-written")}>{idea.title}</span>
+          {writing ? (
+            <span
+              aria-hidden="true"
+              className="s60-caret ml-1 inline-block h-[0.85em] w-[0.08em] translate-y-[0.08em] bg-signal align-baseline"
+            />
+          ) : null}
         </h3>
-        <p
-          className={cn("mt-2 max-w-prose leading-7 text-graphite", lineClass)}
-          style={delay(1)}
-        >
-          {idea.pitch}
-        </p>
-        <ol className="mt-4">
+
+        <p className="mt-2 text-body-sm text-ink-muted">{idea.pitch}</p>
+
+        <ol className="mt-4 divide-y divide-hairline border-y border-hairline">
           {idea.steps.map((step, index) => (
             <li
               key={step}
-              className={cn("flex gap-3 leading-7", lineClass)}
-              style={delay(2 + index)}
+              className={cn(
+                "grid grid-cols-[1.75rem_1fr] gap-3 py-3",
+                writing && "s60-step",
+              )}
+              style={writing ? { animationDelay: `${320 + index * 40}ms` } : undefined}
             >
-              <span className="mt-0.5 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-ink/40 font-display text-sm font-bold text-ink">
-                {index + 1}
+              <span className="font-mono text-mono-data text-ink-subtle tabular-nums">
+                {String(index + 1).padStart(2, "0")}
               </span>
-              <span className="text-graphite">{step}</span>
+              <span className="text-body-sm text-ink">{step}</span>
             </li>
           ))}
         </ol>
-        <p
-          className={cn("mt-4 text-sm leading-7 text-graphite/80", lineClass)}
-          style={delay(5)}
-        >
-          <span className="font-bold text-graphite">Tools:</span> {idea.tools.join(" · ")}
-        </p>
-        <p className={cn("text-sm leading-7 text-graphite/80", lineClass)} style={delay(6)}>
-          {idea.deployLine}
-        </p>
-        <p
-          className={cn(
-            "mt-4 inline-flex items-center rounded-full border border-ink/30 bg-ink/5 px-3 py-1 text-sm font-bold text-ink",
-            lineClass,
-          )}
-          style={delay(7)}
-        >
-          You&rsquo;ll deploy this in 60 minutes
-        </p>
-        <p className="mt-3 text-xs text-graphite/70">
+
+        <div className="mt-4 flex flex-wrap items-center gap-2">
+          <span className="mr-1 text-label text-ink-subtle">Tools</span>
+          {idea.tools.map((tool) => (
+            <span
+              key={tool}
+              className="inline-flex items-center rounded-full border border-hairline bg-surface-2 px-2.5 py-1 text-label text-ink-muted"
+            >
+              {tool}
+            </span>
+          ))}
+        </div>
+      </div>
+
+      <div className="flex flex-wrap items-center justify-between gap-2 border-t border-hairline px-4 py-3 sm:px-5">
+        <p className="text-body-sm text-ink">You&rsquo;ll deploy this in 60 minutes</p>
+        <p className="text-label text-ink-subtle">
           {idea.source === "ai" ? "Written for you just now" : "From the Ship60 idea bank"}
         </p>
       </div>

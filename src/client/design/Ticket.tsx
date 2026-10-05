@@ -10,32 +10,25 @@ export interface TicketProps {
   className?: string;
 }
 
-/** Seat ticket styled like the stub at the top of a lab record. */
+/** Seat ticket (DESIGN.md §5): mono seat number in signal at mono-stat size. */
 export function Ticket({ seatNo, name, projectTitle, detail, footer, className }: TicketProps) {
   return (
     <div
       data-testid="seat-ticket"
-      className={cn(
-        "relative overflow-hidden rounded-xl border border-ink/30 bg-surface shadow-[0_1px_2px_rgba(46,51,59,0.08)]",
-        className,
-      )}
+      className={cn("overflow-hidden rounded-panel border border-hairline bg-surface-2", className)}
     >
-      <div className="flex items-stretch">
-        <div className="flex w-24 shrink-0 flex-col items-center justify-center border-r border-dashed border-ink/40 bg-ink/5 px-3 py-4">
-          <span className="text-xs font-bold text-graphite/70">Seat</span>
-          <span className="font-display font-stretch-expanded text-3xl font-black text-ink">
-            {seatNo}
-          </span>
-        </div>
-        <div className="min-w-0 px-4 py-4">
-          {name ? <p className="font-bold text-graphite">{name}</p> : null}
-          {projectTitle ? (
-            <p className="mt-0.5 truncate text-sm text-graphite/80">{projectTitle}</p>
-          ) : null}
-          {detail ? <p className="mt-2 text-sm text-graphite/70">{detail}</p> : null}
-          {footer ? <div className="mt-3">{footer}</div> : null}
-        </div>
+      <div className="px-5 py-5">
+        <p className="text-label text-ink-subtle">Seat</p>
+        <p className="font-mono text-mono-stat text-signal tabular-nums">{seatNo}</p>
+        {name ? <p className="mt-2 text-title text-ink">{name}</p> : null}
+        {projectTitle ? (
+          <p className="mt-1 truncate text-body-sm text-ink-muted">{projectTitle}</p>
+        ) : null}
+        {detail ? <p className="mt-3 text-body-sm text-ink-subtle">{detail}</p> : null}
       </div>
+      {footer ? (
+        <div className="border-t border-dashed border-hairline-strong px-5 py-4">{footer}</div>
+      ) : null}
     </div>
   );
 }
