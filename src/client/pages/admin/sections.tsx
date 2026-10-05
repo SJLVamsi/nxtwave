@@ -1,4 +1,5 @@
-import { Suspense, lazy, useEffect, useState, type FormEvent, type ReactNode } from "react";
+import { Suspense, lazy, useEffect, useState, type FormEvent } from "react";
+import { Button, Chip, Input, Select, SimulatedBadge } from "../../design";
 import type {
   AdminAmbassadorRow,
   AdminCollegeRow,
@@ -10,111 +11,75 @@ import type {
   PacingResponse,
   VariantRow,
 } from "../../../shared/contracts";
-import { SIMULATED_LABEL } from "../../../shared/constants";
 import type { AdminAiUsage, CreateAmbassadorInput } from "./api";
 import type { PacingChartPoint } from "./PacingChart";
+import { COMPACT_BUTTON, DataTable, Section, StatusText } from "./parts";
 
 const PacingChart = lazy(() => import("./PacingChart"));
 
-/* ---------------------------------- basics ---------------------------------- */
+const DECIDE_BASE =
+  "inline-flex min-h-9 items-center justify-center rounded-control border px-3 text-[12px] " +
+  "font-medium transition-colors duration-[var(--dur-ui)] disabled:cursor-not-allowed " +
+  "disabled:opacity-40 pointer-coarse:min-h-11 focus-visible:outline-2 " +
+  "focus-visible:outline-offset-2 focus-visible:outline-signal";
+const APPROVE_BUTTON = `${DECIDE_BASE} border-hairline bg-surface-2 text-ink hover:border-hairline-strong hover:bg-surface-3`;
+const REJECT_BUTTON = `${DECIDE_BASE} border-danger/40 bg-transparent text-danger hover:border-danger/60 hover:bg-danger/10`;
 
-export function Section({
-  title,
-  subtitle,
-  aside,
-  children,
-  className = "",
-}: {
-  title: string;
-  subtitle?: string;
-  aside?: ReactNode;
-  children: ReactNode;
-  className?: string;
-}) {
-  return (
-    <section className={`rounded-md border border-[#DDE5F2] bg-white ${className}`}>
-      <header className="flex flex-wrap items-baseline gap-x-2 gap-y-1 border-b border-[#DDE5F2] px-3 py-2">
-        <h2 className="text-sm font-semibold text-[#1F3A93]">{title}</h2>
-        {subtitle ? <p className="text-[11px] text-[#2E333B]">{subtitle}</p> : null}
-        {aside ? <div className="ml-auto">{aside}</div> : null}
-      </header>
-      <div className="p-3">{children}</div>
-    </section>
-  );
-}
+/* --------------------------------- headline --------------------------------- */
 
-function Table({ head, children }: { head: string[]; children: ReactNode }) {
-  return (
-    <div className="overflow-x-auto">
-      <table className="w-full min-w-[560px] border-collapse text-left text-xs">
-        <thead>
-          <tr className="border-b border-[#DDE5F2] text-[11px] text-[#2E333B]">
-            {head.map((heading) => (
-              <th key={heading} className="px-2 py-1.5 font-medium">
-                {heading}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>{children}</tbody>
-      </table>
-    </div>
-  );
-}
-
-function Td({ children, className = "" }: { children: ReactNode; className?: string }) {
-  return <td className={`border-b border-[#DDE5F2]/70 px-2 py-1.5 align-top ${className}`}>{children}</td>;
-}
-
-function Stat({
-  label,
-  value,
-  detail,
-  progress,
-}: {
-  label: string;
-  value: string;
-  detail: string;
-  progress?: number;
-}) {
-  return (
-    <div className="rounded-md border border-[#DDE5F2] bg-white px-3 py-2">
-      <p className="text-[11px] text-[#2E333B]">{label}</p>
-      <p className="mt-0.5 font-mono text-xl font-semibold tabular-nums text-[#2E333B]">{value}</p>
-      <p className="text-[11px] text-[#2E333B]">{detail}</p>
-      {progress !== undefined ? (
-        <div className="mt-1.5 h-1.5 w-full rounded-full bg-[#DDE5F2]">
-          <div className="h-1.5 rounded-full bg-[#1F3A93]" style={{ width: `${progress}%` }} />
-        </div>
-      ) : null}
-    </div>
-  );
-}
-
-export function StatCards({ overview }: { overview: AdminOverview }) {
+export function StatRuler({ overview }: { overview: AdminOverview }) {
   const pct =
     overview.target > 0
       ? Math.min(100, Math.round((overview.registrations / overview.target) * 100))
       : 0;
+  const stats = [
+    {
+      label: "Registrations",
+      value: String(overview.registrations),
+      detail: `of ${overview.target} · ${pct}%`,
+      progress: pct,
+    },
+    { label: "Today", value: String(overview.todayRegistrations), detail: "new today" },
+    { label: "From referrals", value: `${overview.referralSharePct}%`, detail: "of registrations" },
+    { label: "Colleges", value: String(overview.colleges), detail: "with registrations" },
+    { label: "Qualified", value: String(overview.qualifiedReferrals), detail: "checked in" },
+  ];
   return (
-    <div className="grid grid-cols-2 gap-2 lg:grid-cols-5">
-      <Stat
-        label="Registrations"
-        value={String(overview.registrations)}
-        detail={`of ${overview.target} · ${pct}%`}
-        progress={pct}
-      />
-      <Stat label="Today" value={String(overview.todayRegistrations)} detail="new registrations" />
-      <Stat label="From referrals" value={`${overview.referralSharePct}%`} detail="of registrations" />
-      <Stat label="Colleges" value={String(overview.colleges)} detail="with registrations" />
-      <Stat
-        label="Qualified referrals"
-        value={String(overview.qualifiedReferrals)}
-        detail="checked in"
-      />
-    </div>
+    <section
+      data-testid="admin-overview"
+      aria-label="Campaign headline numbers"
+      className="border-b border-hairline"
+    >
+      <dl className="mx-auto grid max-w-[1120px] grid-cols-2 px-4 sm:px-6 md:grid-cols-5">
+        {stats.map((stat, index) => (
+          <div
+            key={stat.label}
+            className={`border-b border-hairline py-3 max-md:odd:border-r max-md:odd:pr-4 max-md:even:pl-4 md:border-b-0 md:border-l md:py-4 md:pl-6 md:first:border-l-0 md:first:pl-0 ${
+              index === stats.length - 1
+                ? "max-md:col-span-2 max-md:border-b-0 max-md:pl-0"
+                : ""
+            }`}
+          >
+            <dt className="text-[11px] text-ink-subtle">{stat.label}</dt>
+            <dd className="mt-1 flex items-baseline gap-2">
+              <span className="font-mono text-[clamp(1.35rem,3vw,1.75rem)] font-medium leading-none tracking-[-0.01em] text-ink tabular-nums">
+                {stat.value}
+              </span>
+              <span className="truncate text-[11px] text-ink-subtle">{stat.detail}</span>
+            </dd>
+            {stat.progress !== undefined ? (
+              <div className="mt-2 h-px w-full max-w-[140px] bg-hairline" role="presentation">
+                <div className="h-px bg-signal" style={{ width: `${stat.progress}%` }} />
+              </div>
+            ) : null}
+          </div>
+        ))}
+      </dl>
+    </section>
   );
 }
+
+/* --------------------------------- simulated -------------------------------- */
 
 export function SimulatedBanner({
   overview,
@@ -127,22 +92,23 @@ export function SimulatedBanner({
 }) {
   if (overview.simulatedCount <= 0) return null;
   return (
-    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-md border border-[#FFE45C] bg-[#FFE45C]/25 px-3 py-2 text-xs text-[#2E333B]">
-      <span className="font-semibold">{SIMULATED_LABEL}</span>
-      <span>
-        {overview.simulatedCount} simulated registrations in the database. This view currently{" "}
-        <strong>{overview.includeSimulated ? "includes" : "excludes"}</strong> them.
-      </span>
-      <label className="ml-auto inline-flex cursor-pointer items-center gap-2">
-        <input
-          type="checkbox"
-          checked={overview.includeSimulated}
+    <div className="border-b border-warning/25 bg-warning/[0.07]">
+      <div className="mx-auto grid max-w-[1120px] grid-cols-[auto_auto] items-center gap-x-3 gap-y-1 px-4 py-2 sm:flex sm:px-6 sm:py-1.5">
+        <SimulatedBadge className="shrink-0" />
+        <Chip
+          selected={overview.includeSimulated}
           disabled={refreshing}
-          onChange={(event) => onToggle(event.target.checked)}
-          className="h-4 w-4 accent-[#1F3A93]"
-        />
-        Include simulated
-      </label>
+          onClick={() => onToggle(!overview.includeSimulated)}
+          className="shrink-0 justify-self-end sm:order-3 sm:justify-self-auto"
+        >
+          Include simulated
+        </Chip>
+        <p className="col-span-2 min-w-0 text-[12px] leading-snug text-ink-muted sm:order-2 sm:col-span-1 sm:flex-1 sm:truncate">
+          <span className="font-mono tabular-nums">{overview.simulatedCount}</span> simulated
+          registrations in the database · this view{" "}
+          {overview.includeSimulated ? "includes" : "excludes"} them
+        </p>
+      </div>
     </div>
   );
 }
@@ -153,10 +119,12 @@ export function PacingPanel({
   pacing,
   includeSimulated,
   onEnableSimulated,
+  className = "",
 }: {
   pacing: PacingResponse;
   includeSimulated: boolean;
   onEnableSimulated: () => void;
+  className?: string;
 }) {
   const [replayDay, setReplayDay] = useState<number | null>(null);
   const total = pacing.points.length;
@@ -183,130 +151,303 @@ export function PacingPanel({
     if (replayDay === null || index < replayDay) return point;
     return { ...point, plannedCumulative: null, actualCumulative: null };
   });
+  const replaying = replayDay !== null && replayDay < total;
 
   return (
     <Section
       title="Pacing vs plan"
-      subtitle="Cumulative registrations against the day-by-day plan"
+      className={className}
+      meta={
+        <>
+          day{" "}
+          <span className="text-ink">{pacing.currentDay > 0 ? pacing.currentDay : "—"}</span> of{" "}
+          {total} · projected day-7{" "}
+          <span className="text-ink">{pacing.projectedTotal.toLocaleString("en-IN")}</span>
+          {includeSimulated ? (
+            <SimulatedBadge className="ml-2 align-middle font-sans" />
+          ) : null}
+        </>
+      }
       aside={
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+          <span className="inline-flex items-center gap-1.5 font-mono text-[11px] text-ink-subtle">
+            <span aria-hidden="true" className="h-px w-4 bg-hairline-strong" />
+            planned
+          </span>
+          <span className="inline-flex items-center gap-1.5 font-mono text-[11px] text-ink-subtle">
+            <span aria-hidden="true" className="h-0.5 w-4 rounded-full bg-signal" />
+            actual
+          </span>
           <button
             type="button"
+            className={COMPACT_BUTTON}
+            disabled={replaying}
             onClick={startReplay}
-            className="rounded-sm border border-[#1F3A93] px-2 py-1 text-[11px] font-medium text-[#1F3A93] hover:bg-[#1F3A93]/5"
           >
-            {replayDay !== null ? `Replaying day ${replayDay} of ${total}…` : "Time-lapse replay (7 days)"}
+            <svg
+              aria-hidden="true"
+              viewBox="0 0 12 12"
+              className="h-3 w-3"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.25"
+            >
+              <path d="M3.5 2.5 9 6l-5.5 3.5z" strokeLinejoin="round" />
+            </svg>
+            {replayDay !== null ? `day ${Math.min(replayDay, total)}/${total}` : "Replay 7 days"}
           </button>
         </div>
       }
     >
-      <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1 pb-2 text-xs text-[#2E333B]">
-        <span>
-          Current day: <strong>{pacing.currentDay > 0 ? pacing.currentDay : "—"}</strong> of {total}
-        </span>
-        <span>
-          Projected day-7 total:{" "}
-          <strong className="font-mono tabular-nums">{pacing.projectedTotal}</strong>
-        </span>
-        {includeSimulated ? (
-          <span className="rounded-sm bg-[#FFE45C]/40 px-1.5 py-0.5 text-[10px]">
-            {SIMULATED_LABEL}
-          </span>
+      <div className="rounded-panel border border-hairline bg-surface-1 p-2 sm:p-3">
+        <Suspense
+          fallback={
+            <div className="h-52 w-full animate-skeleton rounded bg-surface-2 sm:h-64" aria-hidden="true" />
+          }
+        >
+          <PacingChart points={chartPoints} currentDay={pacing.currentDay} />
+        </Suspense>
+        {replayDay !== null ? (
+          <div className="mt-1 h-px bg-hairline" role="presentation">
+            <div
+              className="h-px bg-signal transition-[width] duration-[2800ms] ease-linear"
+              style={{ width: `${(Math.min(replayDay, total) / total) * 100}%` }}
+            />
+          </div>
         ) : null}
       </div>
-      <Suspense fallback={<div className="h-60 w-full animate-pulse rounded bg-[#DDE5F2]/50 sm:h-72" />}>
-        <PacingChart points={chartPoints} />
-      </Suspense>
     </Section>
   );
 }
 
 /* ----------------------------------- funnel --------------------------------- */
 
-export function FunnelPanel({ steps }: { steps: FunnelStep[] }) {
-  const max = Math.max(...steps.map((step) => step.count), 1);
+export function FunnelPanel({ steps, className = "" }: { steps: FunnelStep[]; className?: string }) {
+  const max = Math.max(1, ...steps.map((step) => step.count));
   return (
-    <Section title="Funnel" subtitle="Landing view → referral registration">
-      <div className="space-y-2">
-        {steps.map((step) => (
-          <div key={step.key} className="grid grid-cols-[8.5rem_1fr_5rem] items-center gap-2 text-xs">
-            <span className="truncate text-[#2E333B]">{step.label}</span>
-            <div className="h-4 rounded-sm bg-[#DDE5F2]/60">
+    <Section
+      title="Funnel"
+      className={className}
+      meta="landing view → referral registration"
+    >
+      <ol>
+        {steps.map((step, index) => (
+          <li
+            key={step.key}
+            className={`py-2.5 ${index > 0 ? "border-t border-hairline" : ""}`}
+          >
+            <div className="flex items-baseline justify-between gap-4">
+              <span className="min-w-0 truncate text-[13px] text-ink-muted">{step.label}</span>
+              <span className="shrink-0 font-mono text-[13px] tabular-nums text-ink">
+                {step.count.toLocaleString("en-IN")}
+                {step.conversionFromPrev !== null ? (
+                  <span className="ml-2 text-[11px] text-ink-subtle">
+                    {step.conversionFromPrev}%
+                  </span>
+                ) : null}
+              </span>
+            </div>
+            <div className="mt-2 h-px w-full bg-hairline" role="presentation">
               <div
-                className="h-4 rounded-sm bg-[#1F3A93]"
-                style={{ width: `${Math.max(step.count > 0 ? 2 : 0, (step.count / max) * 100)}%` }}
+                className="h-px bg-signal"
+                style={{
+                  width: `${Math.max(step.count > 0 ? 0.5 : 0, (step.count / max) * 100)}%`,
+                }}
               />
             </div>
-            <span className="text-right font-mono tabular-nums text-[#2E333B]">
-              {step.count}
-              {step.conversionFromPrev !== null ? (
-                <span className="ml-1 text-[10px] text-[#5A6472]">{step.conversionFromPrev}%</span>
-              ) : null}
-            </span>
-          </div>
+          </li>
         ))}
-      </div>
+      </ol>
     </Section>
   );
 }
 
 /* ---------------------------------- channels -------------------------------- */
 
-export function ChannelsPanel({ rows }: { rows: ChannelRow[] }) {
+export function ChannelsPanel({ rows, className = "" }: { rows: ChannelRow[]; className?: string }) {
   return (
-    <Section title="Channels" subtitle="Referral vs UTM source / medium">
-      <Table head={["Channel", "Registrations", "Share"]}>
-        {rows.map((row) => (
-          <tr key={row.channel}>
-            <Td>{row.channel}</Td>
-            <Td className="font-mono tabular-nums">{row.registrations}</Td>
-            <Td className="font-mono tabular-nums">{row.sharePct}%</Td>
-          </tr>
-        ))}
-        {rows.length === 0 ? (
-          <tr>
-            <Td className="text-[#2E333B]">No registrations yet.</Td>
-            <Td>{""}</Td>
-            <Td>{""}</Td>
-          </tr>
-        ) : null}
-      </Table>
+    <Section title="Channels" className={className} meta="referral vs UTM source">
+      <DataTable
+        columns={[
+          { key: "channel", label: "Channel" },
+          { key: "registrations", label: "Registrations", numeric: true },
+          { key: "share", label: "Share", numeric: true },
+        ]}
+        rows={rows}
+        rowKey={(row) => row.channel}
+        empty="No registrations yet."
+        cell={(row, column) => {
+          if (column.key === "channel") {
+            return (
+              <span className="block">
+                <span className="block text-ink">{row.channel}</span>
+                <span className="mt-1.5 block h-px w-full max-w-[160px] bg-hairline">
+                  <span
+                    className="block h-px bg-signal"
+                    style={{ width: `${Math.min(100, row.sharePct)}%` }}
+                  />
+                </span>
+              </span>
+            );
+          }
+          if (column.key === "registrations") return row.registrations.toLocaleString("en-IN");
+          return `${row.sharePct}%`;
+        }}
+      />
     </Section>
   );
 }
 
 /* ---------------------------------- colleges -------------------------------- */
 
-export function CollegesPanel({ rows }: { rows: AdminCollegeRow[] }) {
+export function CollegesPanel({
+  rows,
+  className = "",
+}: {
+  rows: AdminCollegeRow[];
+  className?: string;
+}) {
   return (
     <Section
       title="Colleges"
-      subtitle="“No ambassador yet” is highlighted — those are the day-3 checkpoint targets"
+      className={className}
+      meta="no-ambassador rows are day-3 checkpoint targets"
     >
-      <Table head={["College", "Registrations", "Qualified", "Ambassadors", "Ambassador status"]}>
-        {rows.map((row) => (
-          <tr key={`${row.collegeId ?? "other"}:${row.name}`} className={row.hasAmbassador ? "" : "bg-[#FFE45C]/15"}>
-            <Td>
-              <span className="font-medium">{row.shortName}</span>
-              {row.collegeId === null ? (
-                <span className="ml-1 text-[10px] text-[#2E333B]">other</span>
-              ) : null}
-            </Td>
-            <Td className="font-mono tabular-nums">{row.registrations}</Td>
-            <Td className="font-mono tabular-nums">{row.qualified}</Td>
-            <Td className="font-mono tabular-nums">{row.ambassadors}</Td>
-            <Td>
-              {row.hasAmbassador ? (
-                <span className="text-[#1F3A93]">covered</span>
-              ) : (
-                <span className="rounded-sm bg-[#D7263D]/10 px-1.5 py-0.5 text-[10px] font-medium text-[#B01731]">
-                  No ambassador yet
-                </span>
-              )}
-            </Td>
-          </tr>
-        ))}
-      </Table>
+      <DataTable
+        columns={[
+          { key: "college", label: "College" },
+          { key: "registrations", label: "Registrations", numeric: true },
+          { key: "qualified", label: "Qualified", numeric: true },
+          { key: "ambassadors", label: "Ambassadors", numeric: true },
+          { key: "status", label: "Ambassador status" },
+        ]}
+        rows={rows}
+        rowKey={(row) => `${row.collegeId ?? "other"}:${row.name}`}
+        empty="No colleges yet."
+        cell={(row, column) => {
+          if (column.key === "college") {
+            return (
+              <>
+                <span className="font-medium text-ink">{row.shortName}</span>
+                {row.collegeId === null ? (
+                  <span className="ml-1.5 text-[11px] text-ink-subtle">other</span>
+                ) : null}
+              </>
+            );
+          }
+          if (column.key === "registrations") return row.registrations.toLocaleString("en-IN");
+          if (column.key === "qualified") return row.qualified.toLocaleString("en-IN");
+          if (column.key === "ambassadors") return row.ambassadors.toLocaleString("en-IN");
+          return row.hasAmbassador ? (
+            <span className="text-[12px] text-success">covered</span>
+          ) : (
+            <StatusText tone="open">No ambassador yet</StatusText>
+          );
+        }}
+      />
+    </Section>
+  );
+}
+
+/* ---------------------------------- variants -------------------------------- */
+
+export function VariantsPanel({ rows, className = "" }: { rows: VariantRow[]; className?: string }) {
+  return (
+    <Section title="Share variants" className={className} meta="per WhatsApp message">
+      <DataTable
+        columns={[
+          { key: "variant", label: "Variant" },
+          { key: "landings", label: "Landings", numeric: true },
+          { key: "registrations", label: "Registrations", numeric: true },
+          { key: "conversion", label: "Conversion", numeric: true },
+        ]}
+        rows={rows}
+        rowKey={(row) => row.variant}
+        empty="No variant traffic yet."
+        cell={(row, column) => {
+          if (column.key === "variant") return <span className="font-mono">{row.variant}</span>;
+          if (column.key === "landings") return row.landings.toLocaleString("en-IN");
+          if (column.key === "registrations") return row.registrations.toLocaleString("en-IN");
+          return `${row.conversionPct}%`;
+        }}
+      />
+    </Section>
+  );
+}
+
+/* ----------------------------------- flags ---------------------------------- */
+
+export function FlagsPanel({
+  rows,
+  busyId,
+  onDecide,
+  className = "",
+}: {
+  rows: FlagRow[];
+  busyId: string | null;
+  onDecide: (userId: string, decision: "approve" | "reject") => void;
+  className?: string;
+}) {
+  const open = rows.filter((row) => row.status === "open").length;
+  return (
+    <Section
+      title="Flags queue"
+      className={className}
+      testId="flags-queue"
+      meta={`${open} open · ${rows.length} total`}
+    >
+      <DataTable
+        columns={[
+          { key: "name", label: "Name" },
+          { key: "contact", label: "Contact", className: "md:max-w-[15rem]" },
+          { key: "reason", label: "Reason" },
+          { key: "status", label: "Status" },
+          { key: "actions", label: "Decision" },
+        ]}
+        rows={rows}
+        rowKey={(row) => row.userId}
+        empty="No flags."
+        cell={(row, column) => {
+          if (column.key === "name") return row.name;
+          if (column.key === "contact") {
+            return (
+              <span className="block">
+                <span className="block break-all">{row.email}</span>
+                <span className="block font-mono text-[11px] text-ink-subtle">{row.phone}</span>
+              </span>
+            );
+          }
+          if (column.key === "reason") {
+            return <span className="font-mono text-[12px] text-ink-muted">{row.reason}</span>;
+          }
+          if (column.key === "status") {
+            const tone =
+              row.status === "open" ? "open" : row.status === "approved" ? "good" : "bad";
+            return <StatusText tone={tone}>{row.status}</StatusText>;
+          }
+          const busy = busyId === row.userId;
+          return (
+            <span className="flex justify-end gap-2 md:justify-start">
+              <button
+                type="button"
+                disabled={busy || row.status !== "open"}
+                onClick={() => onDecide(row.userId, "approve")}
+                className={APPROVE_BUTTON}
+              >
+                Approve
+              </button>
+              <button
+                type="button"
+                disabled={busy || row.status !== "open"}
+                onClick={() => onDecide(row.userId, "reject")}
+                className={REJECT_BUTTON}
+              >
+                Reject
+              </button>
+            </span>
+          );
+        }}
+      />
     </Section>
   );
 }
@@ -317,12 +458,16 @@ export function AmbassadorsPanel({
   rows,
   colleges,
   onCreate,
+  className = "",
 }: {
   rows: AdminAmbassadorRow[];
   colleges: AdminCollegeRow[];
   onCreate: (input: CreateAmbassadorInput) => Promise<void>;
+  className?: string;
 }) {
-  const collegeOptions = colleges.filter((college) => college.collegeId !== null);
+  const collegeOptions = colleges
+    .filter((college) => college.collegeId !== null)
+    .map((college) => ({ value: college.collegeId ?? "", label: college.name }));
   const [name, setName] = useState("");
   const [collegeChoice, setCollegeChoice] = useState("");
   const [collegeOther, setCollegeOther] = useState("");
@@ -355,185 +500,98 @@ export function AmbassadorsPanel({
   }
 
   return (
-    <Section title="Ambassadors" subtitle="Registrations and qualified referrals they drove">
-      <Table head={["Name", "College", "Code", "Registrations", "Qualified", "Last activity"]}>
-        {rows.map((row) => (
-          <tr key={row.userId}>
-            <Td>{row.name}</Td>
-            <Td>{row.college ?? "—"}</Td>
-            <Td>
-              <a className="font-mono text-[#1F3A93] underline" href={row.kitPath} target="_blank" rel="noreferrer">
+    <Section
+      title="Ambassadors"
+      className={className}
+      meta={`${rows.length} active · registrations and qualified referrals they drove`}
+    >
+      <DataTable
+        columns={[
+          { key: "name", label: "Name" },
+          { key: "college", label: "College" },
+          { key: "code", label: "Code" },
+          { key: "registrations", label: "Registrations", numeric: true },
+          { key: "qualified", label: "Qualified", numeric: true },
+          { key: "activity", label: "Last activity" },
+        ]}
+        rows={rows}
+        rowKey={(row) => row.userId}
+        empty="No ambassadors yet."
+        cell={(row, column) => {
+          if (column.key === "name") return row.name;
+          if (column.key === "college") return row.college ?? "—";
+          if (column.key === "code") {
+            return (
+              <a
+                className="font-mono text-info underline decoration-hairline-strong underline-offset-4 hover:decoration-current"
+                href={row.kitPath}
+                target="_blank"
+                rel="noreferrer"
+              >
                 {row.code}
               </a>
-            </Td>
-            <Td className="font-mono tabular-nums">{row.registrations}</Td>
-            <Td className="font-mono tabular-nums">{row.qualified}</Td>
-            <Td className="text-[11px] text-[#2E333B]/70">
-              {row.lastActivityAt ? new Date(row.lastActivityAt).toLocaleString() : "—"}
-            </Td>
-          </tr>
-        ))}
-        {rows.length === 0 ? (
-          <tr>
-            <Td className="text-[#2E333B]">No ambassadors yet.</Td>
-            <Td>{""}</Td>
-            <Td>{""}</Td>
-            <Td>{""}</Td>
-            <Td>{""}</Td>
-            <Td>{""}</Td>
-          </tr>
-        ) : null}
-      </Table>
+            );
+          }
+          if (column.key === "registrations") return row.registrations.toLocaleString("en-IN");
+          if (column.key === "qualified") return row.qualified.toLocaleString("en-IN");
+          return row.lastActivityAt ? new Date(row.lastActivityAt).toLocaleString() : "—";
+        }}
+      />
 
-      <form onSubmit={handleSubmit} className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-5">
-        <label className="text-[11px] text-[#2E333B]/70">
-          Name
-          <input
-            required
-            minLength={2}
-            maxLength={80}
-            value={name}
-            onChange={(event) => setName(event.target.value)}
-            className="mt-0.5 w-full rounded-sm border border-[#DDE5F2] px-2 py-1 text-xs text-[#2E333B]"
-          />
-        </label>
-        <label className="text-[11px] text-[#2E333B]/70">
-          College
-          <select
-            value={collegeChoice}
-            onChange={(event) => setCollegeChoice(event.target.value)}
-            className="mt-0.5 w-full rounded-sm border border-[#DDE5F2] bg-white px-2 py-1 text-xs text-[#2E333B]"
-          >
-            <option value="">No college</option>
-            {collegeOptions.map((college) => (
-              <option key={college.collegeId} value={college.collegeId ?? ""}>
-                {college.name}
-              </option>
-            ))}
-            <option value="__other">Other…</option>
-          </select>
-        </label>
+      <form
+        onSubmit={handleSubmit}
+        className="mt-5 grid grid-cols-1 gap-x-4 gap-y-3 border-t border-hairline pt-5 sm:grid-cols-2 lg:grid-cols-5"
+      >
+        <Input
+          label="Name"
+          required
+          minLength={2}
+          maxLength={80}
+          value={name}
+          onChange={(event) => setName(event.target.value)}
+        />
+        <Select
+          label="College"
+          value={collegeChoice}
+          onChange={(event) => setCollegeChoice(event.target.value)}
+          options={[...collegeOptions, { value: "__other", label: "Other…" }]}
+          placeholder="No college"
+        />
         {collegeChoice === "__other" ? (
-          <label className="text-[11px] text-[#2E333B]/70">
-            College name
-            <input
-              value={collegeOther}
-              onChange={(event) => setCollegeOther(event.target.value)}
-              className="mt-0.5 w-full rounded-sm border border-[#DDE5F2] px-2 py-1 text-xs text-[#2E333B]"
-            />
-          </label>
+          <Input
+            label="College name"
+            value={collegeOther}
+            onChange={(event) => setCollegeOther(event.target.value)}
+          />
         ) : null}
-        <label className="text-[11px] text-[#2E333B]/70">
-          Phone (optional)
-          <input
-            value={phone}
-            onChange={(event) => setPhone(event.target.value)}
-            className="mt-0.5 w-full rounded-sm border border-[#DDE5F2] px-2 py-1 text-xs text-[#2E333B]"
-          />
-        </label>
-        <label className="text-[11px] text-[#2E333B]/70">
-          Email (optional)
-          <input
-            type="email"
-            value={email}
-            onChange={(event) => setEmail(event.target.value)}
-            className="mt-0.5 w-full rounded-sm border border-[#DDE5F2] px-2 py-1 text-xs text-[#2E333B]"
-          />
-        </label>
+        <Input
+          label="Phone (optional)"
+          type="tel"
+          inputMode="tel"
+          autoComplete="off"
+          spellCheck={false}
+          value={phone}
+          onChange={(event) => setPhone(event.target.value)}
+        />
+        <Input
+          label="Email (optional)"
+          type="email"
+          autoComplete="off"
+          spellCheck={false}
+          value={email}
+          onChange={(event) => setEmail(event.target.value)}
+        />
         <div className="flex items-end">
-          <button
-            type="submit"
-            disabled={saving}
-            className="w-full rounded-sm bg-[#1F3A93] px-3 py-1.5 text-xs font-medium text-white hover:bg-[#182e75] disabled:opacity-50 sm:w-auto"
-          >
-            {saving ? "Creating…" : "Create ambassador"}
-          </button>
+          <Button type="submit" variant="primary" loading={saving} className="w-full sm:w-auto">
+            Create ambassador
+          </Button>
         </div>
       </form>
-      {error ? <p className="mt-2 text-xs text-[#D7263D]">{error}</p> : null}
-    </Section>
-  );
-}
-
-/* ---------------------------------- variants -------------------------------- */
-
-export function VariantsPanel({ rows }: { rows: VariantRow[] }) {
-  return (
-    <Section title="Share variants" subtitle="Landings and registrations per WhatsApp message">
-      <Table head={["Variant", "Landings", "Registrations", "Conversion"]}>
-        {rows.map((row) => (
-          <tr key={row.variant}>
-            <Td className="font-mono">{row.variant}</Td>
-            <Td className="font-mono tabular-nums">{row.landings}</Td>
-            <Td className="font-mono tabular-nums">{row.registrations}</Td>
-            <Td className="font-mono tabular-nums">{row.conversionPct}%</Td>
-          </tr>
-        ))}
-      </Table>
-    </Section>
-  );
-}
-
-/* ----------------------------------- flags ---------------------------------- */
-
-export function FlagsPanel({
-  rows,
-  busyId,
-  onDecide,
-}: {
-  rows: FlagRow[];
-  busyId: string | null;
-  onDecide: (userId: string, decision: "approve" | "reject") => void;
-}) {
-  const open = rows.filter((row) => row.status === "open");
-  return (
-    <Section title="Flags queue" subtitle="Fraud-guard hits stay in the database until reviewed">
-      {open.length === 0 ? (
-        <p className="pb-2 text-xs text-[#2E333B]">No open flags.</p>
+      {error ? (
+        <p className="mt-3 text-[13px] text-danger" role="alert">
+          {error}
+        </p>
       ) : null}
-      <Table head={["Name", "Contact", "Reason", "Status", "Actions"]}>
-        {rows.map((row) => (
-          <tr key={row.userId}>
-            <Td>{row.name}</Td>
-            <Td className="text-[11px]">
-              <span className="block">{row.email}</span>
-              <span className="block text-[#2E333B]">{row.phone}</span>
-            </Td>
-            <Td className="font-mono text-[11px]">{row.reason}</Td>
-            <Td>
-              <span
-                className={
-                  row.status === "open"
-                    ? "rounded-sm bg-[#D7263D]/10 px-1.5 py-0.5 text-[10px] font-medium text-[#B01731]"
-                    : "text-[11px] text-[#2E333B]"
-                }
-              >
-                {row.status}
-              </span>
-            </Td>
-            <Td>
-              <div className="flex gap-1">
-                <button
-                  type="button"
-                  disabled={busyId === row.userId || row.status !== "open"}
-                  onClick={() => onDecide(row.userId, "approve")}
-                  className="rounded-sm border border-[#1F3A93] px-2 py-0.5 text-[11px] text-[#1F3A93] hover:bg-[#1F3A93]/5 disabled:opacity-40"
-                >
-                  Approve
-                </button>
-                <button
-                  type="button"
-                  disabled={busyId === row.userId || row.status !== "open"}
-                  onClick={() => onDecide(row.userId, "reject")}
-                  className="rounded-sm border border-[#D7263D] px-2 py-0.5 text-[11px] text-[#D7263D] hover:bg-[#D7263D]/5 disabled:opacity-40"
-                >
-                  Reject
-                </button>
-              </div>
-            </Td>
-          </tr>
-        ))}
-      </Table>
     </Section>
   );
 }
@@ -544,51 +602,56 @@ export function BriefPanel({
   brief,
   loading,
   onGenerate,
+  className = "",
 }: {
   brief: DailyBrief | null;
   loading: boolean;
   onGenerate: () => void;
+  className?: string;
 }) {
   return (
     <Section
       title="Daily brief"
-      subtitle="Rule-based recommendations plus an optional AI paragraph"
+      className={className}
+      meta={brief ? `generated ${new Date(brief.generatedAt).toLocaleString()}` : "not generated yet"}
       aside={
-        <button
-          type="button"
-          onClick={onGenerate}
-          disabled={loading}
-          className="rounded-sm border border-[#1F3A93] px-2 py-1 text-[11px] font-medium text-[#1F3A93] hover:bg-[#1F3A93]/5 disabled:opacity-50"
-        >
+        <Button variant="secondary" loading={loading} onClick={onGenerate}>
           {loading ? "Generating…" : "Generate brief"}
-        </button>
+        </Button>
       }
     >
       {brief === null && !loading ? (
-        <p className="text-xs text-[#2E333B]">No brief generated yet.</p>
+        <p className="text-[13px] text-ink-subtle">
+          No brief generated yet. Generate one for rule-based recommendations and an optional AI
+          paragraph.
+        </p>
       ) : null}
       {brief ? (
-        <div className="space-y-2 text-xs text-[#2E333B]">
-          <ul className="list-disc space-y-1 pl-4">
-            {brief.lines.map((line) => (
-              <li key={line}>{line}</li>
+        <div>
+          <ol>
+            {brief.lines.map((line, index) => (
+              <li
+                key={line}
+                className={`py-2.5 text-[13px] leading-relaxed text-ink-muted ${
+                  index > 0 ? "border-t border-hairline" : ""
+                }`}
+              >
+                {line}
+              </li>
             ))}
-          </ul>
+          </ol>
           {brief.aiParagraph ? (
-            <p className="rounded-sm border border-[#DDE5F2] bg-[#FBFCFE] p-2">
-              <span className="mr-1 rounded-sm bg-[#1F3A93]/10 px-1.5 py-0.5 text-[10px] font-medium text-[#1F3A93]">
-                AI summary
-              </span>
-              {brief.aiParagraph}
-            </p>
+            <div className="mt-4 border-l border-hairline-strong pl-3">
+              <p className="font-mono text-[11px] text-ink-subtle">AI summary</p>
+              <p className="mt-1.5 max-w-[75ch] text-[13px] leading-relaxed text-ink-muted">
+                {brief.aiParagraph}
+              </p>
+            </div>
           ) : (
-            <p className="text-[11px] text-[#2E333B]">
+            <p className="mt-3 text-[12px] text-ink-subtle">
               AI summary unavailable — rule-based lines only.
             </p>
           )}
-          <p className="text-[10px] text-[#2E333B]">
-            Generated {new Date(brief.generatedAt).toLocaleString()}
-          </p>
         </div>
       ) : null}
     </Section>
@@ -600,9 +663,11 @@ export function BriefPanel({
 export function ExportPanel({
   includeSimulated,
   onExport,
+  className = "",
 }: {
   includeSimulated: boolean;
   onExport: (include: boolean) => Promise<void>;
+  className?: string;
 }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -620,39 +685,46 @@ export function ExportPanel({
   }
 
   return (
-    <Section title="Export" subtitle="Admin-only CSV with every follow-up field">
-      <button
-        type="button"
-        onClick={handleClick}
-        disabled={busy}
-        className="rounded-sm bg-[#1F3A93] px-3 py-1.5 text-xs font-medium text-white hover:bg-[#182e75] disabled:opacity-50"
-      >
+    <Section title="Export" className={className} meta="admin-only CSV">
+      <Button variant="secondary" loading={busy} onClick={handleClick}>
         {busy ? "Preparing…" : "Download registrations CSV"}
-      </button>
-      <p className="mt-1.5 text-[11px] text-[#2E333B]">
-        Includes name, email, phone, college, branch, UTM, referral and check-in status
-        {includeSimulated ? " — simulated rows included." : " — simulated rows excluded."}
+      </Button>
+      <p className="mt-3 max-w-[60ch] text-[12px] leading-relaxed text-ink-subtle">
+        Name, email, phone, college, branch, UTM, referral and check-in status —{" "}
+        {includeSimulated ? "simulated rows included." : "simulated rows excluded."}
       </p>
-      {error ? <p className="mt-1 text-xs text-[#D7263D]">{error}</p> : null}
+      {error ? (
+        <p className="mt-2 text-[13px] text-danger" role="alert">
+          {error}
+        </p>
+      ) : null}
     </Section>
   );
 }
 
 /* ---------------------------------- ai usage -------------------------------- */
 
-export function AiUsagePanel({ usage }: { usage: AdminAiUsage }) {
-  const kinds = Object.entries(usage.byKind);
+export function AiUsagePanel({ usage, className = "" }: { usage: AdminAiUsage; className?: string }) {  const kinds = Object.entries(usage.byKind);
   return (
-    <Section title="AI usage today" subtitle="Every model call is tracked as an event">
-      <p className="font-mono text-lg font-semibold tabular-nums text-[#2E333B]">{usage.callsToday}</p>
+    <Section title="AI usage today" className={className} meta="every model call is an event">
+      <p className="font-mono text-[1.75rem] font-medium leading-none tabular-nums text-ink">
+        {usage.callsToday.toLocaleString("en-IN")}
+      </p>
       {kinds.length === 0 ? (
-        <p className="text-[11px] text-[#2E333B]">No AI calls today.</p>
+        <p className="mt-2 text-[12px] text-ink-subtle">No AI calls today.</p>
       ) : (
-        <ul className="mt-1 space-y-0.5 text-[11px] text-[#2E333B]/80">
-          {kinds.map(([kind, count]) => (
-            <li key={kind} className="flex justify-between gap-3">
-              <span className="font-mono">{kind}</span>
-              <span className="font-mono tabular-nums">{count}</span>
+        <ul className="mt-3">
+          {kinds.map(([kind, count], index) => (
+            <li
+              key={kind}
+              className={`flex justify-between gap-3 py-2 text-[12px] ${
+                index > 0 ? "border-t border-hairline" : ""
+              }`}
+            >
+              <span className="font-mono text-ink-muted">{kind}</span>
+              <span className="font-mono tabular-nums text-ink">
+                {count.toLocaleString("en-IN")}
+              </span>
             </li>
           ))}
         </ul>

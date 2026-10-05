@@ -1,6 +1,13 @@
-import { useMutation, useQuery, useQueryClient, QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import {
+  useMutation,
+  useQuery,
+  useQueryClient,
+  QueryClient,
+  QueryClientProvider,
+} from "@tanstack/react-query";
 import { useCallback, useState, type FormEvent } from "react";
 import type { AdminOverview } from "../../../shared/contracts";
+import { Button, Input } from "../../design";
 import {
   AdminApiError,
   adminFetch,
@@ -24,7 +31,7 @@ import {
   FunnelPanel,
   PacingPanel,
   SimulatedBanner,
-  StatCards,
+  StatRuler,
   VariantsPanel,
 } from "./sections";
 
@@ -39,6 +46,68 @@ export default function AdminPage() {
     <QueryClientProvider client={client}>
       <AdminDashboard />
     </QueryClientProvider>
+  );
+}
+
+function LoginScreen({
+  password,
+  onPasswordChange,
+  error,
+  pending,
+  onSubmit,
+}: {
+  password: string;
+  onPasswordChange: (value: string) => void;
+  error: string | null;
+  pending: boolean;
+  onSubmit: (event: FormEvent) => void;
+}) {
+  return (
+    <main className="relative grid min-h-screen place-items-center bg-canvas px-4 text-ink">
+      <div aria-hidden="true" className="bg-grid pointer-events-none absolute inset-0 opacity-50" />
+      <div className="relative w-full max-w-[380px]">
+        <p className="flex items-baseline gap-2">
+          <span className="text-[15px] font-semibold tracking-[-0.02em]">Ship60</span>
+          <span className="font-mono text-[11px] text-ink-subtle">war room</span>
+        </p>
+        <h1 className="mt-6 text-[clamp(1.75rem,6vw,2.25rem)] font-semibold leading-[1.08] tracking-[-0.03em] text-ink">
+          Admin war room
+        </h1>
+        <p className="mt-2 max-w-[38ch] text-[14px] leading-relaxed text-ink-muted">
+          Sign in with the admin password to review the campaign.
+        </p>
+        <form onSubmit={onSubmit} className="mt-7 border-t border-hairline-strong pt-6">
+          <Input
+            label="Admin password"
+            type="password"
+            autoComplete="current-password"
+            spellCheck={false}
+            required
+            data-testid="admin-password"
+            value={password}
+            onChange={(event) => onPasswordChange(event.target.value)}
+          />
+          {error ? (
+            <p className="mt-3 text-[13px] text-danger" role="alert">
+              {error}
+            </p>
+          ) : null}
+          <Button
+            type="submit"
+            variant="primary"
+            fullWidth
+            loading={pending}
+            data-testid="admin-login"
+            className="mt-5"
+          >
+            Sign in
+          </Button>
+        </form>
+        <p className="mt-4 font-mono text-[11px] text-ink-subtle">
+          daily 9 PM review · registrations, pacing, flags, brief
+        </p>
+      </div>
+    </main>
   );
 }
 
@@ -132,131 +201,133 @@ function AdminDashboard() {
 
   if (session.isPending) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-[#FBFCFE] text-sm text-[#2E333B]">
-        Checking session…
+      <main className="grid min-h-screen place-items-center bg-canvas text-ink">
+        <p className="font-mono text-[12px] text-ink-subtle">Checking session…</p>
       </main>
     );
   }
 
   if (!authed) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-[#FBFCFE] px-4">
-        <form
-          onSubmit={handleLogin}
-          className="w-full max-w-sm rounded-md border border-[#DDE5F2] bg-white p-5"
-        >
-          <h1 className="text-lg font-semibold text-[#1F3A93]">Admin war room</h1>
-          <p className="mt-1 text-xs text-[#2E333B]">
-            Ship60 · sign in with the admin password to review the campaign.
-          </p>
-          <label className="mt-4 block text-xs text-[#2E333B]/70">
-            Admin password
-            <input
-              type="password"
-              autoComplete="current-password"
-              required
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              className="mt-1 w-full rounded-sm border border-[#DDE5F2] px-2 py-1.5 text-sm text-[#2E333B]"
-            />
-          </label>
-          {loginError ? <p className="mt-2 text-xs text-[#D7263D]">{loginError}</p> : null}
-          <button
-            type="submit"
-            disabled={loginMutation.isPending}
-            className="mt-4 w-full rounded-sm bg-[#1F3A93] px-3 py-2 text-sm font-medium text-white hover:bg-[#182e75] disabled:opacity-50"
-          >
-            {loginMutation.isPending ? "Signing in…" : "Sign in"}
-          </button>
-        </form>
-      </main>
+      <LoginScreen
+        password={password}
+        onPasswordChange={setPassword}
+        error={loginError}
+        pending={loginMutation.isPending}
+        onSubmit={handleLogin}
+      />
     );
   }
 
   const coreError =
-    core.error instanceof Error && !(core.error instanceof AdminApiError && core.error.status === 401)
+    core.error instanceof Error &&
+    !(core.error instanceof AdminApiError && core.error.status === 401)
       ? core.error.message
       : null;
   const busyFlag = flagMutation.isPending ? (flagMutation.variables?.userId ?? null) : null;
+  const refreshing = core.isFetching || brief.isFetching;
 
   return (
-    <main className="min-h-screen bg-[#FBFCFE] px-3 py-4 text-[#2E333B] sm:px-5">
-      <div className="mx-auto max-w-6xl space-y-3">
-        <header className="flex flex-wrap items-center gap-2">
-          <h1 className="text-lg font-semibold text-[#1F3A93]">Admin war room</h1>
-          <span className="text-xs text-[#2E333B]">Ship60 · daily 9 PM review</span>
-          <div className="ml-auto flex items-center gap-2">
-            {core.isFetching || brief.isFetching ? (
-              <span className="text-[11px] text-[#2E333B]">Refreshing…</span>
+    <main className="min-h-screen bg-canvas text-ink">
+      <header className="sticky top-0 z-30 border-b border-hairline bg-canvas">
+        <div className="mx-auto flex h-14 max-w-[1120px] items-center gap-3 px-4 sm:px-6">
+          <p className="flex min-w-0 items-baseline gap-2">
+            <span className="shrink-0 text-[15px] font-semibold tracking-[-0.02em] text-ink">
+              Ship60
+            </span>
+            <span className="truncate font-mono text-[11px] text-ink-subtle">
+              war room<span className="hidden md:inline"> · daily 9 PM review</span>
+            </span>
+          </p>
+          <div className="ml-auto flex shrink-0 items-center gap-2">
+            {refreshing ? (
+              <span className="hidden font-mono text-[11px] text-ink-subtle md:inline">
+                refreshing…
+              </span>
             ) : null}
-            <button
-              type="button"
+            <Button
+              variant="secondary"
               onClick={() => {
                 void core.refetch();
                 void brief.refetch();
               }}
-              className="rounded-sm border border-[#DDE5F2] px-2 py-1 text-[11px] text-[#2E333B] hover:bg-[#DDE5F2]/40"
             >
               Refresh
-            </button>
-            <button
-              type="button"
+            </Button>
+            <Button
+              variant="ghost"
+              loading={logoutMutation.isPending}
               onClick={() => logoutMutation.mutate()}
-              className="rounded-sm border border-[#DDE5F2] px-2 py-1 text-[11px] text-[#2E333B] hover:bg-[#DDE5F2]/40"
             >
               Log out
-            </button>
+            </Button>
           </div>
-        </header>
+        </div>
+        {core.data ? (
+          <SimulatedBanner
+            overview={core.data.overview}
+            onToggle={setIncludeSimulated}
+            refreshing={core.isFetching}
+          />
+        ) : null}
+      </header>
 
+      {core.data ? <StatRuler overview={core.data.overview} /> : null}
+
+      <div className="mx-auto max-w-[1120px] px-4 pb-24 pt-6 sm:px-6 sm:pt-10">
         {coreError || actionError ? (
-          <p className="rounded-md border border-[#D7263D]/40 bg-[#D7263D]/5 px-3 py-2 text-xs text-[#D7263D]">
+          <p
+            role="alert"
+            className="mb-8 rounded-control border border-danger/50 bg-danger/10 px-3 py-2 text-[13px] text-danger"
+          >
             {coreError ?? actionError}
           </p>
         ) : null}
 
         {core.data ? (
-          <>
-            <SimulatedBanner
-              overview={core.data.overview}
-              onToggle={setIncludeSimulated}
-              refreshing={core.isFetching}
-            />
-            <StatCards overview={core.data.overview} />
+          <div className="grid grid-cols-1 gap-x-8 gap-y-12 lg:grid-cols-3">
             <PacingPanel
+              className="lg:col-span-3"
               pacing={core.data.pacing}
               includeSimulated={includeSimulated}
               onEnableSimulated={() => setIncludeSimulated(true)}
             />
-            <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
-              <FunnelPanel steps={core.data.funnel} />
-              <ChannelsPanel rows={core.data.channels} />
-              <CollegesPanel rows={core.data.colleges} />
-              <VariantsPanel rows={core.data.variants} />
-              <AmbassadorsPanel
-                rows={core.data.ambassadors}
-                colleges={core.data.colleges}
-                onCreate={handleCreateAmbassador}
-              />
-              <div className="space-y-3">
-                <FlagsPanel rows={core.data.flags} busyId={busyFlag} onDecide={handleFlag} />
-                <AiUsagePanel usage={core.data.aiUsage} />
-                <ExportPanel
-                  includeSimulated={includeSimulated}
-                  onExport={downloadRegistrationsCsv}
-                />
-              </div>
-            </div>
+            <FunnelPanel className="lg:col-span-2" steps={core.data.funnel} />
+            <ChannelsPanel rows={core.data.channels} />
+            <CollegesPanel className="lg:col-span-2" rows={core.data.colleges} />
+            <VariantsPanel rows={core.data.variants} />
+            <FlagsPanel
+              className="lg:col-span-3"
+              rows={core.data.flags}
+              busyId={busyFlag}
+              onDecide={handleFlag}
+            />
+            <AmbassadorsPanel
+              className="lg:col-span-3"
+              rows={core.data.ambassadors}
+              colleges={core.data.colleges}
+              onCreate={handleCreateAmbassador}
+            />
             <BriefPanel
+              className="lg:col-span-2"
               brief={brief.data ?? null}
               loading={brief.isFetching}
               onGenerate={() => void brief.refetch()}
             />
-          </>
+            <div className="space-y-12">
+              <AiUsagePanel usage={core.data.aiUsage} />
+              <ExportPanel
+                includeSimulated={includeSimulated}
+                onExport={downloadRegistrationsCsv}
+              />
+            </div>
+          </div>
         ) : (
-          <p className="text-sm text-[#2E333B]">
-            {core.isPending ? "Loading war room…" : "War room data unavailable."}
-          </p>
+          <div className="space-y-6" aria-hidden="true">
+            <div className="h-16 animate-skeleton rounded bg-surface-2" />
+            <div className="h-64 animate-skeleton rounded bg-surface-2" />
+            <div className="h-40 animate-skeleton rounded bg-surface-2" />
+          </div>
         )}
       </div>
     </main>

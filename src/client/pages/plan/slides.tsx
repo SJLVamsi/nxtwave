@@ -1,8 +1,10 @@
 /**
- * WS8 — the five /plan slides (PRD M12, §3.4). Every number comes from
+ * The five /plan slides (PRD M12, §3.4). Every number comes from
  * src/shared/plan.ts so the deck can never disagree with the product.
+ * Visual language: display statements, hairline data rows, one signal accent.
  */
 import type { ReactNode } from "react";
+import { SimulatedBadge, buttonClass } from "../../design";
 import { SIMULATED_LABEL } from "../../../shared/constants";
 import {
   BUDGET,
@@ -19,138 +21,154 @@ import {
   TARGET_REGISTRATIONS,
 } from "../../../shared/plan";
 
-const CHANNEL_COLORS: Record<string, string> = {
-  ambassadors: "#1F3A93",
-  referral: "#D7263D",
-  clubs: "#3B5BA5",
-  owned: "#6E7BA6",
-  boost: "#B7791F",
-};
+const H2 =
+  "max-w-[24ch] text-[clamp(1.9rem,4.6vw,3.25rem)] font-semibold leading-[1.06] " +
+  "tracking-[-0.03em] text-ink [text-wrap:balance]";
+const H2_SOFT =
+  "max-w-[40ch] text-[clamp(1.6rem,3.7vw,2.6rem)] font-semibold leading-[1.12] " +
+  "tracking-[-0.025em] text-ink [text-wrap:balance]";
+const H3 = "text-[13px] font-medium tracking-[0.01em] text-ink";
+const ROW = "border-t border-hairline";
+const MONO = "font-mono tabular-nums";
 
-function Kicker({ children }: { children: ReactNode }) {
-  return <p className="mb-2 text-xs font-semibold text-[#1F3A93]">{children}</p>;
+function SubHead({ children }: { children: ReactNode }) {
+  return <h3 className={H3}>{children}</h3>;
 }
 
-function SimulatedBadge() {
-  return (
-    <span className="inline-flex items-center gap-1 rounded border border-[#D7263D] bg-[#FFF3F4] px-2 py-0.5 text-[11px] font-semibold text-[#D7263D]">
-      {SIMULATED_LABEL}
-    </span>
-  );
-}
+/* --------------------------------- slide 1 ---------------------------------- */
 
-function Card({ children, className = "" }: { children: ReactNode; className?: string }) {
-  return (
-    <div className={`rounded border border-[#DDE5F2] bg-white p-4 shadow-sm ${className}`}>
-      {children}
-    </div>
-  );
-}
+const SEGMENTS = [
+  { label: "Primary segment", body: STUDENT_SEGMENTS.primary },
+  { label: "Secondary segment", body: STUDENT_SEGMENTS.secondary },
+  { label: "Tagged and excluded from the target", body: STUDENT_SEGMENTS.excluded },
+] as const;
 
 export function Slide1Student() {
   return (
-    <div>
-      <Kicker>Slide 1 · The student</Kicker>
-      <h2 className="max-w-4xl text-2xl font-bold text-[#2E333B] sm:text-3xl">
+    <div className="plan-slide-inner">
+      <h2 className={H2}>
         One student: final-year B.Tech, phone-first, in a class group that already trusts a
         classmate.
       </h2>
-      <div className="mt-6 grid gap-4 md:grid-cols-3">
-        <Card>
-          <h3 className="text-sm font-semibold text-[#1F3A93]">Primary segment</h3>
-          <p className="mt-2 text-sm leading-relaxed text-[#2E333B]">{STUDENT_SEGMENTS.primary}</p>
-        </Card>
-        <Card>
-          <h3 className="text-sm font-semibold text-[#1F3A93]">Secondary segment</h3>
-          <p className="mt-2 text-sm leading-relaxed text-[#2E333B]">
-            {STUDENT_SEGMENTS.secondary}
-          </p>
-        </Card>
-        <Card>
-          <h3 className="text-sm font-semibold text-[#1F3A93]">
-            Tagged and excluded from the target
-          </h3>
-          <p className="mt-2 text-sm leading-relaxed text-[#2E333B]">{STUDENT_SEGMENTS.excluded}</p>
-        </Card>
-      </div>
-      <div className="mt-6 rounded border-l-4 border-[#DDE5F2] bg-[#F4F7FD] p-4 text-sm text-[#2E333B]">
+      <dl className="mt-10 grid gap-x-8 gap-y-6 md:grid-cols-3">
+        {SEGMENTS.map((segment) => (
+          <div key={segment.label} className="border-t border-hairline-strong pt-4">
+            <dt className="font-mono text-[11px] text-ink-subtle">{segment.label}</dt>
+            <dd className="mt-2 max-w-[42ch] text-[14px] leading-relaxed text-ink-muted">
+              {segment.body}
+            </dd>
+          </div>
+        ))}
+      </dl>
+      <p className="mt-10 max-w-[64ch] border-t border-hairline pt-4 text-[15px] leading-relaxed text-ink-muted">
         Reach is one WhatsApp class group at a time. The campaign does not need a big audience; it
         needs a couple dozen students who already admin those groups.
+      </p>
+    </div>
+  );
+}
+
+/* --------------------------------- slide 2 ---------------------------------- */
+
+export function Slide2Insight() {
+  return (
+    <div className="plan-slide-inner">
+      <h2 className={H2_SOFT}>{PLAN_INSIGHT}</h2>
+      <div className="mt-10 grid gap-x-12 gap-y-8 lg:grid-cols-[1.6fr_1fr]">
+        <ol>
+          {CHANNELS.map((channel) => (
+            <li
+              key={channel.id}
+              className={`py-3 first:border-t-0 first:pt-0 ${ROW}`}
+            >
+              <div className="flex items-baseline justify-between gap-4">
+                <p className="min-w-0 text-[14px] font-medium text-ink">
+                  <span className="mr-2 font-mono text-[11px] text-ink-subtle">
+                    {String(channel.priority).padStart(2, "0")}
+                  </span>
+                  {channel.label}
+                </p>
+                <p className={`shrink-0 text-[15px] text-ink ${MONO}`}>{channel.registrations}</p>
+              </div>
+              <p className="mt-1 text-[12px] text-ink-subtle">
+                {channel.mechanism}
+                {channel.reach > 0 ? ` · reach ${channel.reach.toLocaleString("en-IN")}` : ""}
+                {channel.conversion > 0
+                  ? ` · conversion ${(channel.conversion * 100).toFixed(1)}%`
+                  : ""}
+              </p>
+            </li>
+          ))}
+        </ol>
+        <section className="border-t border-hairline-strong pt-4">
+          <SubHead>
+            <span className="text-danger">Rejected on purpose</span>
+          </SubHead>
+          <ul className="mt-1">
+            {REJECTED_CHANNELS.map((line) => (
+              <li
+                key={line}
+                className={`py-2.5 text-[13px] leading-relaxed text-ink-muted last:pb-0 ${ROW} first:border-t-0 first:pt-1`}
+              >
+                {line}
+              </li>
+            ))}
+          </ul>
+        </section>
       </div>
     </div>
   );
 }
 
-export function Slide2Insight() {
-  return (
-    <div>
-      <Kicker>Slide 2 · The insight and the channels</Kicker>
-      <blockquote className="max-w-4xl border-l-4 border-[#1F3A93] pl-4 text-xl leading-snug font-semibold text-[#2E333B] sm:text-2xl">
-        {PLAN_INSIGHT}
-      </blockquote>
-      <div className="mt-6 grid gap-2">
-        {CHANNELS.map((channel) => (
-          <div key={channel.id} className="rounded border border-[#DDE5F2] bg-white p-3 shadow-sm">
-            <div className="flex items-baseline justify-between gap-3">
-              <p className="text-sm font-medium text-[#2E333B]">
-                {channel.priority}. {channel.label}
-              </p>
-              <p className="shrink-0 text-sm font-semibold text-[#1F3A93]">
-                {channel.registrations}
-              </p>
-            </div>
-            <p className="mt-1 text-xs text-[#5A6472]">
-              {channel.mechanism}
-              {channel.reach > 0 ? ` · reach ${channel.reach.toLocaleString("en-IN")}` : ""}
-              {channel.conversion > 0
-                ? ` · conversion ${(channel.conversion * 100).toFixed(1)}%`
-                : ""}
-            </p>
-          </div>
-        ))}
-      </div>
-      <div className="mt-6">
-        <h3 className="text-sm font-semibold text-[#D7263D]">Rejected on purpose</h3>
-        <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-[#2E333B]">
-          {REJECTED_CHANNELS.map((line) => (
-            <li key={line}>{line}</li>
-          ))}
-        </ul>
-      </div>
-    </div>
-  );
-}
+/* --------------------------------- slide 3 ---------------------------------- */
+
+const CHANNEL_FILLS: Record<string, string> = {
+  ambassadors: "var(--ink, var(--color-ink, #f4f6f8))",
+  referral: "var(--signal, var(--color-signal, #c8f250))",
+  clubs: "var(--ink-muted, var(--color-ink-muted, #b9c0c9))",
+  owned: "var(--ink-subtle, var(--color-ink-subtle, #7d8590))",
+  boost: "var(--hairline-strong, var(--color-hairline-strong, #3a3f47))",
+};
 
 function ChannelStack() {
   const total = CHANNELS.reduce((sum, channel) => sum + channel.registrations, 0);
   return (
     <div>
-      <div className="flex h-10 w-full overflow-hidden rounded border border-[#DDE5F2]">
+      <div
+        className="flex h-9 w-full overflow-hidden rounded-control border border-hairline"
+        role="img"
+        aria-label={`Channel mix: ${CHANNELS.map((c) => `${c.label} ${c.registrations}`).join(", ")}`}
+      >
         {CHANNELS.map((channel) => (
           <div
             key={channel.id}
-            className="flex items-center justify-center text-[10px] font-semibold text-white sm:text-xs"
+            className="h-full border-r border-hairline last:border-r-0"
             style={{
               width: `${(channel.registrations / total) * 100}%`,
-              background: CHANNEL_COLORS[channel.id] ?? "#2E333B",
+              background: CHANNEL_FILLS[channel.id],
             }}
             title={`${channel.label}: ${channel.registrations}`}
-          >
-            {channel.registrations}
-          </div>
+          />
         ))}
       </div>
-      <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-[#2E333B]">
+      <ul className="mt-2">
         {CHANNELS.map((channel) => (
-          <span key={channel.id} className="inline-flex items-center gap-1">
-            <span
-              className="inline-block h-2 w-2 rounded-sm"
-              style={{ background: CHANNEL_COLORS[channel.id] ?? "#2E333B" }}
-            />
-            {channel.label}
-          </span>
+          <li
+            key={channel.id}
+            className={`flex items-center justify-between gap-3 border-b border-hairline py-1.5 last:border-b-0`}
+          >
+            <span className="flex min-w-0 items-center gap-2 text-[12px] text-ink-muted">
+              <span
+                aria-hidden="true"
+                className="inline-block h-2 w-2 shrink-0 rounded-[2px] border border-hairline"
+                style={{ background: CHANNEL_FILLS[channel.id] }}
+              />
+              <span className="truncate">{channel.label}</span>
+            </span>
+            <span className={`shrink-0 text-[12px] text-ink ${MONO}`}>{channel.registrations}</span>
+          </li>
         ))}
-      </div>
+      </ul>
     </div>
   );
 }
@@ -160,118 +178,132 @@ export function Slide3Math() {
   const referralRegistrations = referral?.registrations ?? 0;
   const nonReferral = PLANNED_REGISTRATIONS - referralRegistrations;
   return (
-    <div>
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <Kicker>Slide 3 · How the 500 come in + budget</Kicker>
+    <div className="plan-slide-inner">
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+        <h2 className={H2}>
+          {PLANNED_REGISTRATIONS} planned registrations against a {TARGET_REGISTRATIONS} target
+        </h2>
         <SimulatedBadge />
       </div>
-      <div className="mt-2 grid gap-4 md:grid-cols-[2fr_1fr]">
-        <Card>
-          <h3 className="text-sm font-semibold text-[#1F3A93]">
-            Channel mix plan · {PLANNED_REGISTRATIONS} registrations against a{" "}
-            {TARGET_REGISTRATIONS} target
-          </h3>
-          <div className="mt-4">
+      <div className="mt-8 grid gap-x-12 gap-y-8 lg:grid-cols-[1.25fr_1fr]">
+        <section>
+          <SubHead>Channel mix plan</SubHead>
+          <div className="mt-3">
             <ChannelStack />
           </div>
-          <p className="mt-4 text-sm text-[#2E333B]">
-            The referral loop adds a k-factor of ≈ {REFERRAL_K_FACTOR} on the {nonReferral}{" "}
+          <p className="mt-4 max-w-[58ch] text-[14px] leading-relaxed text-ink-muted">
+            The referral loop adds a k-factor of ≈&nbsp;{REFERRAL_K_FACTOR} on the {nonReferral}{" "}
             non-referral registrations: those students bring {referralRegistrations} more without a
             new channel.
           </p>
-          <p className="mt-2 text-[11px] text-[#5A6472]">
-            {SIMULATED_LABEL}: plan simulation from <code>src/shared/plan.ts</code>. These are
-            targets, not measured campaign results. Actually seeded numbers are generated by{" "}
-            <code>scripts/seed.ts</code> and labelled in the admin war room.
+          <p className="mt-3 max-w-[62ch] text-[12px] leading-relaxed text-ink-subtle">
+            {SIMULATED_LABEL}: plan simulation from <code className="font-mono">src/shared/plan.ts</code>.
+            These are targets, not measured campaign results. Seeded numbers are labelled in the
+            admin war room.
           </p>
-        </Card>
-        <Card>
-          <h3 className="text-sm font-semibold text-[#1F3A93]">Budget</h3>
-          <table className="mt-3 w-full border-collapse text-left text-sm">
+        </section>
+        <section className="border-t border-hairline-strong pt-4">
+          <SubHead>Budget</SubHead>
+          <table className="mt-3 w-full border-collapse text-left">
             <tbody>
               {BUDGET.map((item) => (
-                <tr key={item.item} className="border-b border-[#DDE5F2]">
-                  <td className="py-2 pr-2 font-medium text-[#2E333B]">{item.item}</td>
-                  <td className="py-2 text-right text-[#2E333B]">
+                <tr key={item.item} className="border-b border-hairline">
+                  <td className="py-2.5 pr-3 text-[13px] text-ink-muted">{item.item}</td>
+                  <td className={`py-2.5 text-right text-[13px] text-ink ${MONO}`}>
                     ₹{item.amount.toLocaleString("en-IN")}
                   </td>
                 </tr>
               ))}
               <tr>
-                <td className="pt-2 pr-2 font-semibold text-[#2E333B]">Total</td>
-                <td className="pt-2 text-right font-semibold text-[#2E333B]">
+                <td className="pt-2.5 pr-3 text-[13px] font-medium text-ink">Total</td>
+                <td className={`pt-2.5 text-right text-[13px] font-medium text-ink ${MONO}`}>
                   ₹{BUDGET_TOTAL.toLocaleString("en-IN")}
                 </td>
               </tr>
             </tbody>
           </table>
-          <p className="mt-3 text-sm text-[#2E333B]">
+          <p className="mt-3 max-w-[46ch] text-[13px] leading-relaxed text-ink-muted">
             Ceiling: ₹{COST_PER_REGISTRATION_CEILING} per registration. The boost test is killed
             above it.
           </p>
-        </Card>
+        </section>
       </div>
-      <div className="mt-4 grid gap-4 md:grid-cols-2">
+      <div className="mt-6 grid gap-x-8 gap-y-3 md:grid-cols-2">
         {BUDGET.filter((item) => item.item !== "Infrastructure").map((item) => (
-          <div
+          <p
             key={item.item}
-            className="rounded border-l-4 border-[#D7263D] bg-white p-3 text-xs text-[#2E333B] shadow-sm"
+            className={`pt-3 text-[12px] leading-relaxed text-ink-muted ${ROW}`}
           >
-            <span className="font-semibold">{item.item}:</span> {item.rule}
-          </div>
+            <span className="font-medium text-ink">{item.item}:</span> {item.rule}
+          </p>
         ))}
       </div>
     </div>
   );
 }
 
+/* --------------------------------- slide 4 ---------------------------------- */
+
 function PacingChart() {
   const width = 720;
-  const height = 220;
-  const padX = 40;
-  const padY = 24;
+  const height = 230;
+  const padX = 46;
+  const padY = 28;
   const max = PACING[PACING.length - 1];
+  const yFor = (value: number) => height - padY - (value / max) * (height - padY * 2);
   const points = PACING.map((value, index) => {
     const x = padX + (index * (width - padX * 2)) / (PACING.length - 1);
-    const y = height - padY - (value / max) * (height - padY * 2);
-    return { x, y, value, day: index + 1 };
+    return { x, y: yFor(value), value, day: index + 1 };
   });
   const line = points.map((point) => `${point.x},${point.y}`).join(" ");
+  const targetY = yFor(TARGET_REGISTRATIONS);
   return (
     <svg
       viewBox={`0 0 ${width} ${height}`}
       role="img"
-      aria-label={`Planned cumulative registrations: ${PACING.join(", ")} on days 1 to 7`}
-      className="h-auto w-full"
+      aria-label={`Planned cumulative registrations: ${PACING.join(", ")} on days 1 to 7. Target ${TARGET_REGISTRATIONS}.`}
+      className="plan-chart h-auto w-full"
     >
-      <title>Planned cumulative registrations by day</title>
+      <title>Planned cumulative registrations by day, against the {TARGET_REGISTRATIONS} target</title>
       {[0, 130, 260, 390, 520].map((tick) => {
-        const y = height - padY - (tick / max) * (height - padY * 2);
+        const y = yFor(tick);
         return (
           <g key={tick}>
-            <line x1={padX} y1={y} x2={width - padX} y2={y} stroke="#DDE5F2" strokeWidth="1" />
-            <text x={padX - 6} y={y + 4} textAnchor="end" fontSize="11" fill="#6E7BA6">
+            <line className="plan-grid" x1={padX} y1={y} x2={width - padX} y2={y} strokeWidth="1" />
+            <text className="plan-axis" x={padX - 10} y={y + 4} textAnchor="end" fontSize="11">
               {tick}
             </text>
           </g>
         );
       })}
-      <polyline points={line} fill="none" stroke="#1F3A93" strokeWidth="3" />
+      <line
+        className="plan-target"
+        x1={padX}
+        y1={targetY}
+        x2={width - padX}
+        y2={targetY}
+        strokeWidth="1"
+        strokeDasharray="2 4"
+      />
+      <text className="plan-target-label" x={padX + 6} y={targetY - 6} textAnchor="start" fontSize="10">
+        target {TARGET_REGISTRATIONS}
+      </text>
+      <polyline className="plan-series" points={line} fill="none" strokeWidth="2" strokeLinejoin="round" />
       {points.map((point) => (
         <g key={point.day}>
-          <circle cx={point.x} cy={point.y} r="4" fill="#D7263D" />
+          <circle className="plan-dot" cx={point.x} cy={point.y} r="2.5" />
           <text
+            className="plan-value"
             x={point.x}
-            y={point.y - 10}
+            y={point.y - 12}
             textAnchor="middle"
             fontSize="12"
-            fill="#2E333B"
-            fontWeight="600"
+            fontWeight="500"
           >
             {point.value}
           </text>
-          <text x={point.x} y={height - 6} textAnchor="middle" fontSize="11" fill="#6E7BA6">
-            Day {point.day}
+          <text className="plan-axis" x={point.x} y={height - 6} textAnchor="middle" fontSize="11">
+            D{point.day}
           </text>
         </g>
       ))}
@@ -281,55 +313,49 @@ function PacingChart() {
 
 export function Slide4Calendar() {
   return (
-    <div>
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <Kicker>Slide 4 · Seven-day plan and the daily loop</Kicker>
+    <div className="plan-slide-inner">
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+        <h2 className={H2}>Seven-day plan and the daily loop</h2>
         <SimulatedBadge />
       </div>
-      <div className="mt-2 grid gap-4 lg:grid-cols-[1.4fr_1fr]">
-        <div className="overflow-x-auto">
-          <table className="w-full border-collapse text-left text-xs sm:text-sm">
-            <thead>
-              <tr className="border-b border-[#DDE5F2] text-[11px] tracking-wide text-[#1F3A93]">
-                <th className="py-2 pr-2">Day</th>
-                <th className="py-2 pr-2">Action</th>
-                <th className="py-2 text-right">Cumulative</th>
-              </tr>
-            </thead>
-            <tbody>
-              {CALENDAR.map((entry) => (
-                <tr key={entry.day} className="border-b border-[#DDE5F2] align-top">
-                  <td className="py-2 pr-2 whitespace-nowrap font-medium text-[#2E333B]">
-                    {entry.day} · {entry.weekday}
-                  </td>
-                  <td className="py-2 pr-2 text-[#2E333B]">{entry.action}</td>
-                  <td className="py-2 text-right font-semibold text-[#2E333B]">
-                    {entry.cumulative}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        <Card>
-          <h3 className="text-sm font-semibold text-[#1F3A93]">Planned cumulative registrations</h3>
-          <div className="mt-2">
+      <div className="mt-6 grid gap-x-12 gap-y-8 lg:grid-cols-[1.15fr_1fr]">
+        <ol>
+          {CALENDAR.map((entry, index) => (
+            <li
+              key={entry.day}
+              className={`grid grid-cols-[4.5rem_1fr_auto] items-baseline gap-3 py-2.5 md:gap-4 ${
+                index > 0 ? ROW : ""
+              }`}
+            >
+              <span className="font-mono text-[11px] text-ink-subtle">
+                D{entry.day} · {entry.weekday}
+              </span>
+              <span className="text-[13px] leading-relaxed text-ink-muted">{entry.action}</span>
+              <span className={`text-[13px] text-ink ${MONO}`}>{entry.cumulative}</span>
+            </li>
+          ))}
+        </ol>
+        <section className="rounded-panel border border-hairline bg-surface-1 p-4">
+          <SubHead>Planned cumulative registrations</SubHead>
+          <div className="mt-3">
             <PacingChart />
           </div>
-          <p className="mt-2 text-[11px] text-[#5A6472]">
-            {SIMULATED_LABEL}: the curve is the plan simulation from <code>src/shared/plan.ts</code>
-            , not measured campaign data. The admin war room charts plan vs seeded actuals with the
-            same constants.
+          <p className="mt-3 text-[12px] leading-relaxed text-ink-subtle">
+            {SIMULATED_LABEL}: the curve is the plan simulation from{" "}
+            <code className="font-mono">src/shared/plan.ts</code>, not measured campaign data. The
+            admin war room charts plan vs seeded actuals with the same constants.
           </p>
-        </Card>
+        </section>
       </div>
-      <div className="mt-4 rounded border-l-4 border-[#1F3A93] bg-[#F4F7FD] p-3 text-sm text-[#2E333B]">
+      <p className="mt-6 max-w-[70ch] border-t border-hairline pt-4 text-[14px] leading-relaxed text-ink-muted">
         Daily 9 PM review: pacing vs plan, top and bottom colleges, which share variant is producing
         referral visits, and flagged signups. Every day ends with one decision written down.
-      </div>
+      </p>
     </div>
   );
 }
+
+/* --------------------------------- slide 5 ---------------------------------- */
 
 const MODULES = [
   {
@@ -367,58 +393,60 @@ const FUNNEL = [
 
 export function Slide5Built() {
   return (
-    <div>
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <Kicker>Slide 5 · What we built and how it measures itself</Kicker>
+    <div className="plan-slide-inner">
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+        <h2 className={H2}>What we built and how it measures itself</h2>
         <SimulatedBadge />
       </div>
-      <div className="mt-2 grid gap-4 lg:grid-cols-2">
-        <div>
-          <h3 className="text-sm font-semibold text-[#1F3A93]">The product</h3>
-          <ul className="mt-2 grid gap-2 text-sm text-[#2E333B]">
-            {MODULES.map((module) => (
+      <div className="mt-6 grid gap-x-12 gap-y-8 lg:grid-cols-2">
+        <section>
+          <SubHead>The product</SubHead>
+          <ul className="mt-2">
+            {MODULES.map((module, index) => (
               <li
                 key={module.name}
-                className="rounded border border-[#DDE5F2] bg-white p-2 shadow-sm"
+                className={`py-2 text-[12px] leading-relaxed text-ink-muted ${
+                  index > 0 ? ROW : ""
+                }`}
               >
-                <span className="font-medium">{module.name}</span>
-                <span className="text-[#5A6472]"> — {module.detail}</span>
+                <span className="font-medium text-ink">{module.name}</span>
+                <span className="text-ink-subtle"> — {module.detail}</span>
               </li>
             ))}
           </ul>
-        </div>
-        <div>
-          <h3 className="text-sm font-semibold text-[#1F3A93]">How it measures itself</h3>
-          <ol className="mt-2 flex flex-wrap gap-2">
+        </section>
+        <section>
+          <SubHead>How it measures itself</SubHead>
+          <ol className="mt-2">
             {FUNNEL.map((step, index) => (
               <li
                 key={step}
-                className="rounded border border-[#DDE5F2] bg-[#F4F7FD] px-2 py-1 text-xs font-medium text-[#2E333B]"
+                className={`flex items-baseline gap-3 py-1.5 text-[12px] text-ink-muted ${
+                  index > 0 ? ROW : ""
+                }`}
               >
-                {index + 1}. {step}
+                <span className="font-mono text-[11px] text-ink-subtle">
+                  {String(index + 1).padStart(2, "0")}
+                </span>
+                {step}
               </li>
             ))}
           </ol>
-          <div className="mt-4 rounded border-l-4 border-[#D7263D] bg-white p-3 text-sm text-[#2E333B] shadow-sm">
+          <p className="mt-4 border-t border-hairline pt-4 text-[13px] leading-relaxed text-ink-muted">
             Every step writes an event. The admin war room compares the actual cumulative curve to
-            the planned curve from <code>src/shared/plan.ts</code> and projects the day-7 total from
-            the current run rate. Seeded demo rows are marked {SIMULATED_LABEL}.
-          </div>
-          <div className="mt-4 flex flex-wrap gap-3 text-sm font-semibold">
-            <a
-              href="/build"
-              className="rounded bg-[#1F3A93] px-4 py-2 text-white no-underline hover:bg-[#16295f]"
-            >
+            the planned curve from <code className="font-mono">src/shared/plan.ts</code> and
+            projects the day-7 total from the current run rate. Seeded demo rows are marked{" "}
+            {SIMULATED_LABEL}.
+          </p>
+          <div className="plan-map-cta mt-5 flex flex-wrap gap-3">
+            <a href="/build" className={buttonClass({ variant: "primary" })}>
               How it was built — /build
             </a>
-            <a
-              href="/"
-              className="rounded border border-[#1F3A93] px-4 py-2 text-[#1F3A93] no-underline hover:bg-[#F4F7FD]"
-            >
+            <a href="/" className={buttonClass({ variant: "secondary" })}>
               Open the live product
             </a>
           </div>
-        </div>
+        </section>
       </div>
     </div>
   );
