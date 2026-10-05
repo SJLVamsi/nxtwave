@@ -34,6 +34,10 @@ dist-ssr
 # superpowers SDD workspace (scratch)
 .superpowers/
 
+# design tooling output (taste-skill); skills also installed globally
+skills/
+templates/taste/
+
 # playwright
 playwright-report
 test-results

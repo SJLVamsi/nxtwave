@@ -297,39 +297,36 @@ function certPage(cert: CertificateResponse, baseUrl: string): string {
 <meta name="twitter:card" content="summary_large_image" />
 <link rel="canonical" href="${escapeHtml(url)}" />
 <style>
-  :root { color-scheme: light dark; }
+  @font-face { font-family: Geist; src: url("/fonts/geist-latin.woff2") format("woff2"); font-weight: 100 900; font-display: swap; }
+  @font-face { font-family: "Geist Mono"; src: url("/fonts/geist-mono-latin.woff2") format("woff2"); font-weight: 100 900; font-display: swap; }
+  :root { color-scheme: dark; }
   * { box-sizing: border-box; }
-  body { margin: 0; font-family: "Atkinson Hyperlegible", system-ui, sans-serif; background: #fbfcfe; color: #2e333b; }
-  main { max-width: 560px; margin: 0 auto; padding: 40px 20px 64px; }
-  .card { border: 1px solid #dde5f2; border-radius: 12px; background: #fff; padding: 28px 22px; box-shadow: 0 1px 0 #dde5f2; }
-  .eyebrow { color: #1f3a93; font-weight: 700; letter-spacing: 0.02em; font-size: 14px; margin: 0 0 6px; }
-  h1 { font-size: 26px; margin: 0 0 4px; line-height: 1.2; }
-  .project { font-size: 18px; margin: 18px 0 2px; }
-  .highlight { background: #ffe45c; padding: 0 4px; }
-  .meta { font-size: 14px; color: #5a6472; margin: 6px 0; }
-  .simulated { color: #b01731; font-weight: 700; }
-  .badge { display: inline-block; margin-top: 14px; padding: 6px 10px; border-radius: 999px; font-size: 13px; font-weight: 700; }
-  .badge.ok { background: #e7f6ec; color: #1d6b3a; }
-  .badge.pending { background: #fdecef; color: #b01731; }
-  .id { margin-top: 18px; font-size: 12px; color: #5a6472; word-break: break-all; }
-  a { color: #1f3a93; }
-  a.home { display: inline-block; margin-top: 22px; font-weight: 700; text-decoration: none; }
-  @media (prefers-color-scheme: dark) {
-    body { background: #12151c; color: #e6e9f0; }
-    .card { background: #1a1f29; border-color: #2c3444; }
-    .meta, .id { color: #9aa4b5; }
-  }
+  body { margin: 0; background: #0a0b0d; color: #f4f6f8; font-family: Geist, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  main { max-width: 560px; margin: 0 auto; padding: 48px 20px 72px; }
+  .card { border: 1px solid #272b31; border-radius: 14px; background: #121417; padding: 28px 22px; }
+  h1 { font-size: 26px; font-weight: 600; letter-spacing: -0.03em; margin: 0 0 18px; line-height: 1.1; text-wrap: balance; }
+  .project { font-size: 18px; margin: 0 0 6px; color: #f4f6f8; }
+  .project-title { color: #c8f250; font-weight: 600; }
+  .meta { font-size: 14px; color: #b9c0c9; margin: 6px 0; }
+  .simulated { color: #ffb224; font-weight: 500; }
+  .badge { display: inline-block; margin-top: 16px; padding: 6px 10px; border-radius: 999px; font-size: 13px; font-weight: 500; }
+  .badge.ok { background: rgba(61, 214, 140, 0.12); color: #3dd68c; }
+  .badge.pending { background: rgba(255, 178, 36, 0.12); color: #ffb224; }
+  .id { margin-top: 20px; font-family: "Geist Mono", ui-monospace, Menlo, monospace; font-size: 12px; color: #7d8590; word-break: break-all; line-height: 1.5; }
+  a { color: #c8f250; }
+  a.home { display: inline-block; margin-top: 24px; font-weight: 500; text-decoration: none; }
+  a.home:hover { text-decoration: underline; }
+  :focus-visible { outline: 2px solid #c8f250; outline-offset: 2px; }
 </style>
 </head>
 <body>
 <main>
   <section class="card">
-    <p class="eyebrow">NxtWave · Ship60</p>
     <h1>Certificate of completion</h1>
     <p class="project"><strong>${escapeHtml(cert.name)}</strong></p>
     ${
       cert.projectTitle
-        ? `<p class="project">built <span class="highlight">${escapeHtml(cert.projectTitle)}</span></p>`
+        ? `<p class="project">built <span class="project-title">${escapeHtml(cert.projectTitle)}</span></p>`
         : ""
     }
     <p class="meta">${escapeHtml(college)}</p>
@@ -349,8 +346,16 @@ function certNotFoundPage(baseUrl: string): string {
   return `<!doctype html>
 <html lang="en">
 <head><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Certificate not found — Ship60</title></head>
-<body style="font-family: system-ui, sans-serif; padding: 40px 20px; max-width: 560px; margin: 0 auto;">
+<title>Certificate not found — Ship60</title>
+<style>
+  @font-face { font-family: Geist; src: url("/fonts/geist-latin.woff2") format("woff2"); font-weight: 100 900; font-display: swap; }
+  :root { color-scheme: dark; }
+  body { margin: 0; background: #0a0b0d; color: #f4f6f8; font-family: Geist, system-ui, sans-serif; padding: 48px 20px; max-width: 560px; margin: 0 auto; }
+  h1 { font-size: 26px; font-weight: 600; letter-spacing: -0.03em; }
+  p { color: #b9c0c9; }
+  a { color: #c8f250; }
+</style></head>
+<body>
 <h1>No certificate with that id</h1>
 <p>Check the link, or ask the student to share their certificate id again.</p>
 <p><a href="${escapeHtml(baseUrl.replace(/\/$/, ""))}/">Go to the workshop page</a></p>
