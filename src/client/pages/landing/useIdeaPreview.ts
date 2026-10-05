@@ -15,15 +15,22 @@ export interface IdeaPreviewState {
   loading: boolean;
   error: string | null;
   ready: boolean;
+  isExample: boolean;
   selectBranch: (branch: Branch) => void;
   selectInterest: (interest: Interest) => void;
   showAnother: () => void;
   retry: () => void;
 }
 
-export function useIdeaPreview(): IdeaPreviewState {
-  const [branch, setBranch] = useState<Branch | null>(null);
-  const [interest, setInterest] = useState<Interest | null>(null);
+/**
+ * `example: true` fetches one canned combination immediately so the hero shows
+ * a real project card before the visitor picks anything (it is labelled as an
+ * example and never counted as an `idea_generated` event).
+ */
+export function useIdeaPreview(options?: { example?: boolean }): IdeaPreviewState {
+  const example = options?.example === true;
+  const [branch, setBranch] = useState<Branch | null>(example ? "CSE/IT/AI-ML" : null);
+  const [interest, setInterest] = useState<Interest | null>(example ? "placements" : null);
   const [variant, setVariant] = useState<Variant>(0);
   const ready = branch !== null && interest !== null;
 
@@ -39,6 +46,7 @@ export function useIdeaPreview(): IdeaPreviewState {
 
   const trackedKeyRef = useRef<string | null>(null);
   useEffect(() => {
+    if (example) return;
     const idea = query.data;
     if (!idea) return;
     const trackedKey = `${idea.key}:${idea.variant}`;
@@ -50,7 +58,7 @@ export function useIdeaPreview(): IdeaPreviewState {
       variant: idea.variant,
       source: idea.source,
     });
-  }, [query.data]);
+  }, [query.data, example]);
 
   const error = query.error
     ? query.error instanceof ApiError
@@ -70,6 +78,7 @@ export function useIdeaPreview(): IdeaPreviewState {
     loading: ready && query.isFetching,
     error,
     ready,
+    isExample: example,
     selectBranch: (next) => {
       setBranch(next);
       reset();

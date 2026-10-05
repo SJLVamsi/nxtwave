@@ -9,6 +9,7 @@ export interface HeroProps {
   interest: Interest | null;
   variant: Variant;
   idea: IdeaCard | null;
+  exampleIdea: IdeaCard | null;
   loading: boolean;
   error: string | null;
   onBranch: (branch: Branch) => void;
@@ -22,6 +23,7 @@ export function Hero({
   interest,
   variant,
   idea,
+  exampleIdea,
   loading,
   error,
   onBranch,
@@ -104,7 +106,16 @@ export function Hero({
         </div>
 
         <div className="lg:sticky lg:top-24">
-          {!ready ? (
+          {!ready && exampleIdea ? (
+            <div className="space-y-3">
+              <ProjectCard idea={exampleIdea} />
+              <p className="text-body-sm text-ink-subtle">
+                Example project — pick your branch and one interest to write yours.
+              </p>
+            </div>
+          ) : null}
+
+          {!ready && !exampleIdea ? (
             <EmptyState
               className="flex min-h-64 flex-col justify-center"
               title="Your project appears here"

@@ -9,6 +9,7 @@ import { useStats } from "./useStats";
 
 export default function LandingPage() {
   const preview = useIdeaPreview();
+  const examplePreview = useIdeaPreview({ example: true });
   const { data: stats } = useStats();
   const [formInView, setFormInView] = useState(false);
   const attribution = useMemo(
@@ -68,6 +69,7 @@ export default function LandingPage() {
           interest={preview.interest}
           variant={preview.variant}
           idea={preview.idea}
+          exampleIdea={preview.ready ? null : examplePreview.idea}
           loading={preview.loading}
           error={preview.error}
           onBranch={preview.selectBranch}
